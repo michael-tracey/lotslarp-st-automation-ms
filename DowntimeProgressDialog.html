@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <title>Downtime Summary</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+        }
+        .container {
+            padding: 24px;
+            max-width: 750px; /* Limit width for better readability */
+            margin: 0 auto; /* Center container */
+        }
+        h2, h3 {
+            color: #343a40;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 8px;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+        h2 { font-size: 1.5em; }
+        h3 { font-size: 1.25em; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-radius: 6px;
+            overflow: hidden; /* Ensures border-radius clips content */
+        }
+        th, td {
+            padding: 12px 15px;
+            border: 1px solid #dee2e6;
+            text-align: left;
+            font-size: 14px;
+            vertical-align: middle;
+        }
+        th {
+            background-color: #e9ecef;
+            font-weight: 500;
+            color: #495057;
+        }
+        td {
+            color: #212529;
+        }
+        tr:nth-child(even) td {
+           /* background-color: #f8f9fa; */ /* Subtle striping if desired */
+        }
+        .metric-label {
+            font-weight: 500;
+            color: #495057;
+        }
+        .metric-value {
+            font-weight: 500;
+            color: #212529;
+        }
+        .percentage-value {
+            font-weight: bold;
+            color: #28a745; /* Green for positive percentages */
+        }
+         .keyword-name {
+             font-weight: 500;
+             color: #007bff; /* Blue for keywords */
+         }
+        .cell-link {
+            color: #007bff;
+            text-decoration: none;
+            font-size: 0.9em;
+            margin-left: 5px;
+            cursor: pointer;
+        }
+        .cell-link:hover {
+            text-decoration: underline;
+        }
+        .progress-bar-container {
+            width: 100%;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            height: 10px;
+            overflow: hidden;
+            margin-top: 4px;
+        }
+        .progress-bar {
+            height: 100%;
+            /* Default background, will be overridden by class */
+            background-color: #6c757d;
+            border-radius: 4px;
+            transition: width 0.5s ease-in-out, background-color 0.3s ease;
+        }
+         .progress-bar.low { background-color: #dc3545 !important; } /* Red */
+         .progress-bar.medium { background-color: #ffc107 !important; } /* Yellow */
+         .progress-bar.high { background-color: #28a745 !important; } /* Green */
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+        .stat-card {
+            background-color: #fff;
+            padding: 15px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border: 1px solid #dee2e6;
+            text-align: center;
+        }
+        .stat-card-title {
+            font-size: 13px;
+            color: #6c757d;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+        .stat-card-value {
+            font-size: 1.4em;
+            font-weight: 700;
+            color: #343a40;
+        }
+         .stat-card-value.percentage {
+             color: #28a745;
+         }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-card-title">Overall Completion</div>
+                <div class="stat-card-value percentage"><?= completionPercentage.toFixed(1) ?>%</div>
+                <div class="progress-bar-container">
+                   <div class="progress-bar"
+                        data-percentage="<?= completionPercentage ?>"
+                        style="width: <?= completionPercentage ?>%;"></div>
+                </div>
+                 <div style="font-size: 12px; color: #6c757d; margin-top: 5px;">(<?= data.completedDowntimeCells ?>/<?= data.totalDowntimeCells ?>)</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-card-title">Characters</div>
+                <div class="stat-card-value"><?= data.characterCount ?></div>
+            </div>
+             <div class="stat-card">
+                <div class="stat-card-title">Avg. Submission Words</div>
+                <div class="stat-card-value"><?= data.averageWords.toFixed(1) ?></div>
+            </div>
+             <div class="stat-card">
+                <div class="stat-card-title">Avg. Response Words</div>
+                <div class="stat-card-value"><?= data.averageResponseWords.toFixed(1) ?></div>
+            </div>
+        </div>
+
+
+        <h3>Word Count Details</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Description</th>
+                    <th>Downtime Submissions</th>
+                    <th>Downtime Responses</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td class="metric-label">Average Words</td>
+                    <td class="metric-value"><?= data.averageWords.toFixed(1) ?></td>
+                    <td class="metric-value"><?= data.averageResponseWords.toFixed(1) ?></td>
+                </tr>
+                <tr>
+                    <td class="metric-label">Median Words</td>
+                    <td class="metric-value"><?= data.medianWords.toFixed(1) ?></td>
+                    <td class="metric-value"><?= data.medianResponseWords.toFixed(1) ?></td>
+                </tr>
+                <tr>
+                    <td class="metric-label">Minimum Words</td>
+                    <td class="metric-value">
+                        <?= data.minWords ?>
+                        <? if (data.minWordCell) { ?>
+                            <a href="#" onclick="jumpToCell_('<?= data.minWordCell ?>'); return false;" class="cell-link">(<?= data.minWordCell ?>)</a>
+                        <? } ?>
+                    </td>
+                     <td class="metric-value">
+                        <?= data.minResponseWords ?>
+                        <? if (data.minResponseWordCell) { ?>
+                            <a href="#" onclick="jumpToCell_('<?= data.minResponseWordCell ?>'); return false;" class="cell-link">(<?= data.minResponseWordCell ?>)</a>
+                        <? } ?>
+                    </td>
+                </tr>
+                <tr>
+                    <td class="metric-label">Maximum Words</td>
+                    <td class="metric-value">
+                        <?= data.maxWords ?>
+                         <? if (data.maxWordCell) { ?>
+                            <a href="#" onclick="jumpToCell_('<?= data.maxWordCell ?>'); return false;" class="cell-link">(<?= data.maxWordCell ?>)</a>
+                        <? } ?>
+                    </td>
+                     <td class="metric-value">
+                        <?= data.maxResponseWords ?>
+                        <? if (data.maxResponseWordCell) { ?>
+                            <a href="#" onclick="jumpToCell_('<?= data.maxResponseWordCell ?>'); return false;" class="cell-link">(<?= data.maxResponseWordCell ?>)</a>
+                        <? } ?>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h3>Keyword Breakdown</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Keyword</th>
+                    <th>Completion</th>
+                    <th>(Completed/Total)</th>
+                    <th>% of Total Downtimes</th>
+                </tr>
+            </thead>
+            <tbody>
+                <? if (keywordData && keywordData.length > 0) { ?>
+                    <? keywordData.forEach(kw => { ?>
+                         <? if (kw.total > 0) { // Only show keywords with submissions ?>
+                            <tr>
+                                <td class="keyword-name"><?= kw.keyword ?></td>
+                                <td>
+                                    <div class="progress-bar-container" title="<?= kw.keywordPercentage ?>%">
+                                        <div class="progress-bar"
+                                             data-percentage="<?= kw.keywordPercentage ?>"
+                                             style="width: <?= kw.keywordPercentage ?>%;"></div>
+                                    </div>
+                                </td>
+                                <td><?= kw.completed ?>/<?= kw.total ?></td>
+                                <td><?= kw.overallPercentage ?>%</td>
+                            </tr>
+                        <? } ?>
+                    <? }) ?>
+                <? } else { ?>
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: #6c757d;">No keyword data available.</td>
+                    </tr>
+                <? } ?>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        /**
+         * Calls the server-side function to jump to a specific cell and closes the dialog.
+         */
+        function jumpToCell_(cellAddress) {
+            google.script.run
+                .withSuccessHandler(closeDialog_) // Close dialog after jump attempt
+                .withFailureHandler(logError_)   // Log error if jump fails
+                .jumpToCell(cellAddress);
+        }
+
+        /**
+         * Closes the current dialog.
+         */
+        function closeDialog_() {
+            google.script.host.close();
+        }
+
+         /**
+          * Logs an error to the console.
+          */
+         function logError_(error) {
+             console.error("Error calling server function: ", error);
+             // Optionally show an alert to the user
+             // alert("An error occurred: " + error.message);
+         }
+
+         /**
+          * Determines CSS class for progress bar based on percentage.
+          */
+         function getProgressClass(percentage) {
+             // Ensure percentage is a number
+             const numPercentage = parseFloat(percentage);
+             if (isNaN(numPercentage)) return ''; // Return empty if not a number
+
+             if (numPercentage < 33) return 'low';
+             if (numPercentage < 66) return 'medium';
+             return 'high';
+         }
+
+         /**
+          * Sets the correct CSS class on all progress bars based on their data-percentage attribute.
+          */
+         function setProgressBarClasses() {
+             const progressBars = document.querySelectorAll('.progress-bar');
+             progressBars.forEach(bar => {
+                 const percentage = bar.dataset.percentage;
+                 if (percentage !== undefined) {
+                     const className = getProgressClass(percentage);
+                     if (className) {
+                         bar.classList.add(className);
+                     }
+                 }
+             });
+         }
+
+         // Run setup functions when the window loads
+         window.onload = function() {
+             setProgressBarClasses(); // Set initial classes for progress bars
+         };
+
+    </script>
+</body>
+</html>

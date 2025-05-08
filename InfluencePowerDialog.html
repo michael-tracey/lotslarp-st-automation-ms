@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <title><?= context.influenceTypeLabel ?> Power for <?= context.characterName ?></title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+      body {
+        font-family: 'Roboto', sans-serif;
+        padding: 15px 20px; /* Adjust padding */
+        background-color: #f8f9fa;
+        font-size: 14px;
+        display: flex; /* Enable flexbox for vertical layout */
+        flex-direction: column; /* Stack elements vertically */
+        height: calc(100vh - 30px); /* Adjust height calculation */
+        min-height: 420px; /* Ensure minimum height */
+      }
+      /* Hide main content when report shows */
+      .main-content.hidden {
+          display: none;
+      }
+      .input-section {
+          margin-bottom: 15px; /* Space below dropdown */
+      }
+      .info-section {
+          background-color: #e9ecef;
+          padding: 10px 15px;
+          border-radius: 4px;
+          border: 1px solid #dee2e6;
+          /* flex-grow: 1; Let report section handle growth */
+          overflow-y: auto; /* Add scroll if content overflows */
+          margin-bottom: 15px; /* Space above buttons */
+          max-height: 200px; /* Limit height */
+      }
+      .info-section h4 { /* Character Name */
+          margin-top: 0;
+          margin-bottom: 10px;
+          font-size: 1.15em;
+          color: #343a40;
+          border-bottom: 1px solid #ced4da;
+          padding-bottom: 5px;
+      }
+      /* NEW: Flex container for spec lists */
+      .spec-columns-container {
+          display: flex;
+          gap: 20px; /* Space between columns */
+      }
+      /* NEW: Styling for each column */
+      .spec-column {
+          flex: 1; /* Equal width */
+          min-width: 0; /* Allow shrinking */
+      }
+      .spec-column p { /* Styling for headers within columns */
+          margin-top: 0;
+          margin-bottom: 5px;
+          font-size: 1em; /* Match base size */
+          color: #495057;
+          font-weight: 500; /* Make headers bold */
+      }
+      .spec-column strong { /* Styling for count */
+          color: #212529;
+          font-weight: bold;
+      }
+       .spec-list {
+           padding-left: 15px; /* Indent list items */
+           margin-top: 3px;
+           margin-bottom: 8px;
+           font-size: 0.9em;
+           color: #495057;
+           list-style-type: disc; /* Use bullets */
+       }
+       .spec-list li {
+           margin-bottom: 2px;
+       }
+       .no-specs {
+           padding-left: 15px;
+           font-style: italic;
+           font-size: 0.9em;
+           color: #6c757d;
+       }
+      label {
+        font-weight: 500;
+        margin-bottom: 8px;
+        display: block;
+        color: #495057;
+      }
+      select {
+        width: 100%;
+        padding: 8px 12px;
+        /* margin-bottom: 20px; Removed bottom margin */
+        border: 1px solid #ced4da;
+        border-radius: 4px;
+        box-sizing: border-box;
+        font-size: 14px;
+      }
+      .button-group {
+        display: flex;
+        justify-content: space-between; /* Space out buttons */
+        gap: 10px;
+        margin-top: auto; /* Push buttons to bottom */
+        padding-top: 10px; /* Add space above buttons */
+      }
+      button {
+        border: none;
+        padding: 10px 15px; /* Adjust padding */
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: background-color 0.2s ease, box-shadow 0.2s ease, opacity 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        display: inline-flex; /* Align spinner */
+        align-items: center;
+        justify-content: center;
+        flex-grow: 1; /* Allow action buttons to grow */
+      }
+       /* Specific button styles */
+      #elite-button { background-color: #28a745; color: white; }
+      #elite-button:hover:not(:disabled) { background-color: #218838; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15); }
+      #uw-button { background-color: #dc3545; color: white; }
+      #uw-button:hover:not(:disabled) { background-color: #c82333; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15); }
+      #cancel-button, #close-button { /* Style both */
+          background-color: #f8f9fa;
+          color: #6c757d;
+          border: 1px solid #ced4da;
+          flex-grow: 0; /* Don't allow cancel/close to grow */
+        }
+      #cancel-button:hover, #close-button:hover { background-color: #e2e6ea; border-color: #adb5bd; box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
+
+       /* UPDATED Disabled Style */
+       button:disabled {
+         background-color: #cccccc; /* More obvious grey */
+         color: #999999; /* Lighter text */
+         cursor: not-allowed;
+         opacity: 0.6; /* Slightly more opaque */
+         box-shadow: none; /* Flatter look */
+       }
+
+       /* Simple spinner */
+       .spinner {
+         border: 3px solid rgba(255, 255, 255, 0.3); /* Lighter border */
+         border-top: 3px solid #fff; /* White top */
+         border-radius: 50%;
+         width: 15px;
+         height: 15px;
+         animation: spin 1s linear infinite;
+         display: none; /* Hidden by default */
+         margin-left: 10px;
+       }
+       @keyframes spin {
+         0% { transform: rotate(0deg); }
+         100% { transform: rotate(360deg); }
+       }
+       #error-message {
+           color: red;
+           margin-top: 10px;
+           font-size: 0.9em;
+           text-align: center; /* Center error */
+           min-height: 1.2em; /* Reserve space for error */
+       }
+       /* Report Area */
+       #report-area {
+           display: none; /* Hidden initially */
+           flex-grow: 1; /* Take remaining space */
+           overflow-y: auto; /* Scroll if needed */
+           padding: 10px;
+           border: 1px solid #ccc;
+           background-color: #fff;
+           border-radius: 4px;
+           margin-bottom: 15px;
+       }
+        #report-area h4 {
+            margin-top: 10px;
+            margin-bottom: 5px;
+            font-size: 1.1em;
+            color: #343a40;
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 3px;
+        }
+         #report-area h4:first-child {
+             margin-top: 0;
+         }
+        #report-area p, #report-area ul {
+            margin-top: 0;
+            margin-bottom: 10px;
+            font-size: 0.95em;
+        }
+        #report-area ul {
+            list-style-type: disc;
+            padding-left: 25px;
+        }
+        #report-area li {
+            margin-bottom: 3px;
+        }
+        #report-area code {
+            background-color: #e9ecef;
+            padding: 0.1em 0.3em;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        #report-area .value-filled {
+            white-space: pre-wrap; /* Preserve newlines */
+            background-color: #e9ecef;
+            padding: 8px;
+            border-radius: 3px;
+            margin-top: 5px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+    </style>
+  </head>
+  <body>
+    <? /* Use scriptlets to access context passed from server */ ?>
+    <? const ctx = context || {}; /* Default to empty object if context is missing */ ?>
+    <? const charName = ctx.characterName || 'Unknown Character'; ?>
+    <? const eliteSpecs = ctx.eliteSpecs || []; ?>
+    <? const uwSpecs = ctx.uwSpecs || []; ?>
+    <? const totalElite = ctx.totalEliteActions || 0; ?>
+    <? const totalUw = ctx.totalUwActions || 0; ?>
+    <? const eliteSheetName = ctx.eliteInfluenceSheetName; ?>
+    <? const uwSheetName = ctx.uwInfluenceSheetName; ?>
+
+    <div class="main-content" id="main-content">
+        <div class="input-section">
+            <label for="powerLevelSelect">Select Action Power Level to Use:</label>
+            <select id="powerLevelSelect">
+              <option value="1" selected>1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+            </select>
+        </div>
+
+        <div class="info-section">
+            <h4>Character: <?= charName ?></h4>
+            <div class="spec-columns-container"> <? /* Container for columns */ ?>
+                <div class="spec-column elite"> <? /* Elite column */ ?>
+                    <p><strong>Total Points in Elite: <?= totalElite ?></strong></p>
+                    <h5>Elite Specializations:</h5>
+                    <? if (eliteSpecs.length > 0) { ?>
+                        <ul class="spec-list">
+                            <? eliteSpecs.forEach(spec => { ?> <li><?= spec ?></li> <? }); ?>
+                        </ul>
+                    <? } else { ?>
+                         <p class="no-specs">None</p>
+                    <? } ?>
+                </div>
+                <div class="spec-column underworld"> <? /* Underworld column */ ?>
+                     <p><strong>Total Points in Underworld: <?= totalUw ?></strong></p>
+                     <h5>Underworld Specializations:</h5>
+                     <? if (uwSpecs.length > 0) { ?>
+                        <ul class="spec-list">
+                            <? uwSpecs.forEach(spec => { ?> <li><?= spec ?></li> <? }); ?>
+                        </ul>
+                    <? } else { ?>
+                         <p class="no-specs">None</p>
+                    <? } ?>
+                </div>
+            </div>
+        </div>
+    </div> <div id="report-area">
+         </div>
+
+     <div id="error-message"></div>
+
+    <div class="button-group" id="button-group">
+      <button id="elite-button">Gossip and Insider Trading <div class="spinner" id="spinner-elite"></div></button>
+      <button id="uw-button">Word on the Street <div class="spinner" id="spinner-uw"></div></button>
+      <button id="cancel-button">Cancel</button>
+      <button id="close-button" style="display: none;">Close</button> </div>
+
+    <script>
+      // Context object is directly available via scriptlet templating
+      const context = <?!= JSON.stringify(context || {}) ?>;
+      const totalElite = context.totalEliteActions || 0;
+      const totalUw = context.totalUwActions || 0;
+      const eliteSheetName = context.eliteInfluenceSheetName;
+      const uwSheetName = context.uwInfluenceSheetName;
+
+
+      const eliteButton = document.getElementById('elite-button');
+      const uwButton = document.getElementById('uw-button');
+      const cancelButton = document.getElementById('cancel-button');
+      const closeButton = document.getElementById('close-button'); // Get close button
+      const selectElement = document.getElementById('powerLevelSelect');
+      const spinnerElite = document.getElementById('spinner-elite');
+      const spinnerUw = document.getElementById('spinner-uw');
+      const errorDiv = document.getElementById('error-message');
+      const mainContentDiv = document.getElementById('main-content');
+      const reportAreaDiv = document.getElementById('report-area');
+      const buttonGroupDiv = document.getElementById('button-group');
+
+      // --- Initial Button State ---
+      eliteButton.disabled = (totalElite === 0);
+      uwButton.disabled = (totalUw === 0);
+
+
+      // --- Function to handle button clicks ---
+      function handleActionButtonClick(type) {
+        const selectedPower = parseInt(selectElement.value, 10);
+        errorDiv.textContent = ''; // Clear previous errors
+
+        // Determine context specific to the button clicked
+        const specificContext = { ...context }; // Copy base context
+        let spinner;
+        if (type === 'Elite') {
+            specificContext.influenceSheetName = eliteSheetName; // Use constant passed via context
+            specificContext.influenceTypeLabel = 'Elite';
+            spinner = spinnerElite;
+        } else if (type === 'Underworld') {
+            specificContext.influenceSheetName = uwSheetName; // Use constant passed via context
+            specificContext.influenceTypeLabel = 'Underworld';
+            spinner = spinnerUw;
+        } else {
+            console.error('Invalid type passed to handleActionButtonClick');
+            return;
+        }
+
+        console.log(`Button Clicked: ${type}, Selected Power: ${selectedPower}`);
+        console.log('Sending Context:', specificContext);
+
+
+        // Show spinner, disable buttons
+        if(spinner) spinner.style.display = 'inline-block';
+        eliteButton.disabled = true;
+        uwButton.disabled = true;
+        cancelButton.disabled = true;
+
+
+        // Call server-side function with selected power and specific context
+        google.script.run
+          .withSuccessHandler(onSuccess)
+          .withFailureHandler(onFailure)
+          .executeInfluenceFill(selectedPower, specificContext); // Calls function in Actions.gs (No underscore)
+      }
+
+      // Function to handle Cancel/Close button click
+      function handleCloseClick() {
+        google.script.host.close();
+      }
+
+      /**
+       * Success handler - receives report data from server.
+       * Hides inputs, displays report, changes Cancel to Close.
+       * @param {object} reportData - The report object from executeInfluenceFill.
+       * @param {string} reportData.outputValue - The value placed in the cell.
+       * @param {number} reportData.skippedTooOld - Count of items skipped due to age.
+       * @param {Array<object>} reportData.skippedBlocks - Array of items skipped due to blocks.
+       * @param {object} reportData.skippedNoColon - Object with counts of items skipped for lacking a colon.
+       * @param {number} reportData.skippedStartsWithTwo - Count of items skipped for starting with '2'.
+       * @param {number} reportData.skippedSpecMismatch - Count of items skipped due to spec mismatch.
+       */
+      function onSuccess(reportData) {
+        console.log('Server function executed successfully. Report:', reportData);
+
+        // ** ADDED: Check if reportData is null/undefined **
+        if (!reportData) {
+            handleCloseClick();
+            console.error("onSuccess received invalid reportData:", reportData);
+            //onFailure(new Error("Received invalid data from server. Please check logs.")); // Trigger failure display
+            return;
+        }
+
+        spinnerElite.style.display = 'none'; // Hide spinners
+        spinnerUw.style.display = 'none';
+        mainContentDiv.classList.add('hidden'); // Hide original content
+
+        // Build Report HTML using detailed counts
+        let reportHTML = `<h4>Action Result</h4>`;
+        reportHTML += `<p>The following value was placed in the cell:</p><div class="value-filled"><code>${escapeHtml(reportData.outputValue || '')}</code></div>`;
+
+        let skippedItemsExist = false; // Flag to check if any skipped sections have content
+
+        if (reportData.skippedTooOld > 0) {
+            skippedItemsExist = true;
+            reportHTML += `<h4>Skipped Due to Age (>95)</h4>`;
+            reportHTML += `<p>${reportData.skippedTooOld} entr${reportData.skippedTooOld === 1 ? 'y' : 'ies'} were skipped.</p>`;
+        }
+
+        // Display details for skipped blocks
+        if (reportData.skippedBlocks && reportData.skippedBlocks.length > 0) {
+            skippedItemsExist = true;
+            reportHTML += `<h4>Skipped Due to Blocks</h4>`;
+            reportHTML += `<ul>`;
+            reportData.skippedBlocks.forEach(item => {
+                 reportHTML += `<li><code>${escapeHtml(item.name || 'Unknown Action')}</code> (Blocks: ${item.blocks}, Needed <= ${item.needed})</li>`;
+            });
+            reportHTML += `</ul>`;
+        }
+
+        // Display details for skipped no colon
+        const skippedNoColonItems = reportData.skippedNoColon || {};
+        const skippedNoColonKeys = Object.keys(skippedNoColonItems);
+        if (skippedNoColonKeys.length > 0) {
+             skippedItemsExist = true;
+             reportHTML += `<h4>Skipped Due to Missing Colon (':') in Output</h4>`;
+             reportHTML += `<ul>`;
+             skippedNoColonKeys.sort().forEach(key => {
+                 reportHTML += `<li><code>${escapeHtml(key)}</code>: ${skippedNoColonItems[key]} time(s)</li>`;
+             });
+             reportHTML += `</ul>`;
+        }
+
+         if (reportData.skippedStartsWithTwo > 0) {
+            skippedItemsExist = true;
+            reportHTML += `<h4>Skipped Due to Output Starting With '2'</h4>`;
+            reportHTML += `<p>${reportData.skippedStartsWithTwo} entr${reportData.skippedStartsWithTwo === 1 ? 'y was' : 'ies were'} skipped.</p>`;
+        }
+
+         // Display count for skipped spec mismatch
+         if (reportData.skippedSpecMismatch > 0) {
+            skippedItemsExist = true;
+            reportHTML += `<h4>Skipped Due to Specialization Mismatch</h4>`;
+            reportHTML += `<p>${reportData.skippedSpecMismatch} entr${reportData.skippedSpecMismatch === 1 ? 'y' : 'ies'} did not match the character's influences for this category.</p>`;
+        }
+
+
+        if (!skippedItemsExist && reportData.outputValue !== INFLUENCE_FALLBACK_TEXT) {
+             reportHTML += `<p style="color: green; margin-top: 15px;">No entries were skipped due to filters.</p>`;
+        } else if (!skippedItemsExist && reportData.outputValue === INFLUENCE_FALLBACK_TEXT) {
+             // If fallback text was set AND no items were skipped by filters, it means no actions matched the *primary* criteria (Age, Blocks, Spec)
+             reportHTML += `<p style="color: orange; margin-top: 15px;">No actions matched the required Age, Block Level, and Specialization criteria.</p>`;
+        }
+
+
+        // Display Report
+        reportAreaDiv.innerHTML = reportHTML;
+        reportAreaDiv.style.display = 'block'; // Show report area
+
+        // Update buttons
+        eliteButton.style.display = 'none';
+        uwButton.style.display = 'none';
+        cancelButton.style.display = 'none'; // Hide original cancel
+        closeButton.style.display = 'inline-flex'; // Show close button
+        closeButton.disabled = false; // Ensure close button is enabled
+        // Adjust button group for single button
+        buttonGroupDiv.style.justifyContent = 'flex-end';
+
+
+      }
+
+      // Failure handler
+      function onFailure(error) {
+        console.error('Server function failed:', error);
+        // Show error to user
+        errorDiv.textContent = 'Error: ' + error.message;
+        // Re-enable buttons after error (respecting original disabled state)
+        spinnerElite.style.display = 'none';
+        spinnerUw.style.display = 'none';
+        eliteButton.disabled = (totalElite === 0); // Re-apply initial disabled state
+        uwButton.disabled = (totalUw === 0); // Re-apply initial disabled state
+        cancelButton.disabled = false;
+      }
+
+       // Simple HTML escape helper for client-side report generation
+      function escapeHtml(unsafe) {
+          if (!unsafe) return '';
+          // Basic escape - consider a more robust library if complex HTML is possible
+          return unsafe
+               .replace(/&/g, "&amp;")
+               .replace(/</g, "&lt;")
+               .replace(/>/g, "&gt;")
+               .replace(/"/g, "&quot;")
+               .replace(/'/g, "&#039;");
+       }
+
+
+      // Add event listeners
+      eliteButton.addEventListener('click', () => handleActionButtonClick('Elite'));
+      uwButton.addEventListener('click', () => handleActionButtonClick('Underworld'));
+      cancelButton.addEventListener('click', handleCloseClick); // Cancel now just closes
+      closeButton.addEventListener('click', handleCloseClick); // Close button also closes
+
+    </script>
+  </body>
+</html>

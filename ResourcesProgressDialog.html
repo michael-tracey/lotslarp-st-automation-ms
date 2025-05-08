@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <title>Resources Summary</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+        }
+        .container {
+            padding: 24px;
+            max-width: 750px;
+            margin: 0 auto;
+        }
+        h2, h3 {
+            color: #343a40;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 8px;
+            margin-top: 24px;
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+        h2 { font-size: 1.5em; }
+        h3 { font-size: 1.25em; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 24px;
+            background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        th, td {
+            padding: 12px 15px;
+            border: 1px solid #dee2e6;
+            text-align: left;
+            font-size: 14px;
+            vertical-align: middle;
+        }
+        th {
+            background-color: #e9ecef;
+            font-weight: 500;
+            color: #495057;
+        }
+        td {
+            color: #212529;
+        }
+        tr:nth-child(even) td {
+           /* background-color: #f8f9fa; */
+        }
+         tr.clickable-row {
+            cursor: pointer;
+            transition: background-color 0.15s ease-in-out;
+        }
+        tr.clickable-row:hover td {
+            background-color: #f1f3f5; /* Light hover effect */
+        }
+        .metric-label {
+            font-weight: 500;
+            color: #495057;
+        }
+        .metric-value {
+            font-weight: 500;
+            color: #212529;
+        }
+        .percentage-value {
+            font-weight: bold;
+            color: #28a745; /* Green for positive percentages */
+        }
+        .character-name {
+            font-weight: 500;
+            color: #007bff; /* Blue for character name */
+        }
+        .cell-id {
+            font-family: monospace;
+            font-size: 0.95em;
+            color: #6c757d; /* Gray for cell ID */
+        }
+        .submitted-text {
+            font-style: italic;
+            color: #495057;
+            max-width: 300px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .footer-note {
+            margin-top: 20px;
+            font-size: 0.9em;
+            color: #6c757d;
+            text-align: center;
+        }
+         .missing-header {
+             color: #dc3545; /* Red */
+             border-bottom-color: #f1b0b7;
+         }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3>Completion Status</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Resource Type</th>
+                    <th>Submitted</th>
+                    <th>Completed</th>
+                    <th>% Completed</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?
+                  // Calculate percentages - assumes 'data' object is passed from Apps Script
+                  // And that getResourcesCompletionData_ puts counts under 'resources' key
+                  const resourcesTotal = data.totalCounts.resources || 0;
+                  const resourcesCompleted = data.completedCounts.resources || 0;
+                  const resourcesPercentage = resourcesTotal > 0 ? (resourcesCompleted / resourcesTotal) * 100 : 0;
+                ?>
+                <tr>
+                    <td class="metric-label">Resources</td>
+                    <td class="metric-value"><?= resourcesTotal ?></td>
+                    <td class="metric-value"><?= resourcesCompleted ?></td>
+                    <td class="percentage-value"><?= resourcesPercentage.toFixed(1) ?>%</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <? if (data.missingItems && data.missingItems.length > 0) { ?>
+            <h3 class="missing-header">Missing Resource Responses</h3>
+             <p style="color: #495057; font-size: 14px;">The following resource entries are missing responses. Click on a row to jump to the cell that needs editing.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Character</th>
+                        <th>Header</th>
+                        <th>Submitted Text</th>
+                        <th>Cell to Edit</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <? data.missingItems.forEach(entry => { ?>
+                        <tr class="clickable-row" onclick="jumpToCell_('<?= entry.cell ?>')">
+                            <td class="character-name"><?= entry.characterName ?></td>
+                            <td><?= entry.header ?></td>
+                            <td class="submitted-text" title="<?= entry.text ?>"><?= entry.text ?></td>
+                            <td class="cell-id"><?= entry.cell ?></td>
+                        </tr>
+                    <? }) ?>
+                </tbody>
+            </table>
+            <p class="footer-note">Found <?= data.missingItems.length ?> missing resource response(s).</p>
+        <? } else { ?>
+             <p style="text-align: center; color: #28a745; font-weight: 500; margin-top: 30px;">✅ All resource responses appear to be completed!</p>
+        <? } ?>
+
+    </div>
+
+    <script>
+        /**
+         * Calls the server-side function to jump to a specific cell and closes the dialog.
+         */
+        function jumpToCell_(cellAddress) {
+            google.script.run
+                .withSuccessHandler(closeDialog_) // Close dialog after jump attempt
+                .withFailureHandler(logError_)   // Log error if jump fails
+                .jumpToCell(cellAddress);
+        }
+
+        /**
+         * Closes the current dialog.
+         */
+        function closeDialog_() {
+            google.script.host.close();
+        }
+
+         /**
+          * Logs an error to the console.
+          */
+         function logError_(error) {
+             console.error("Error calling server function: ", error);
+             // Optionally show an alert to the user
+             // alert("An error occurred: " + error.message);
+         }
+    </script>
+</body>
+</html>
