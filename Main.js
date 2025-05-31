@@ -88,6 +88,8 @@ function onOpen() {
 
   // Maintenance Submenu
   const maintenanceMenu = ui.createMenu('Maintenance');
+  maintenanceMenu.addItem('Manage Script Properties', 'openScriptPropertiesDialog_'); // In ScriptPropertiesManager.gs
+  maintenanceMenu.addSeparator();
   maintenanceMenu.addItem('Reinstall Form Trigger', 'reinstallFormTrigger_'); // In Triggers.gs
   maintenanceMenu.addItem('Reinstall Edit Trigger', 'reinstallOnEditTrigger_'); // In Triggers.gs
   maintenanceMenu.addItem('Reinstall Scheduled Message Trigger', 'setupScheduledMessagesTrigger_')

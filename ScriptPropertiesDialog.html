@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; background-color: #f8f9fa; }
+      .container { background-color: #ffffff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+      h2 { color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+      .property-item { margin-bottom: 15px; }
+      .property-item label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: #555;
+        word-wrap: break-word;
+      }
+      .property-item input[type="text"],
+      .property-item textarea {
+        width: 95%;
+        padding: 8px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-size: 14px;
+      }
+      .property-item textarea {
+        min-height: 60px;
+        resize: vertical;
+      }
+      .button-container { margin-top: 20px; text-align: right; }
+      .button-container button {
+        padding: 10px 15px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        margin-left: 10px;
+      }
+      .button-container button.primary { background-color: #007bff; color: white; }
+      .button-container button.secondary { background-color: #6c757d; color: white; }
+      #status { margin-top: 15px; font-style: italic; }
+      .loader {
+        border: 5px solid #f3f3f3; /* Light grey */
+        border-top: 5px solid #3498db; /* Blue */
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 20px auto;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Edit Script Properties</h2>
+      <div id="properties-form">
+        <div class="loader" id="loader"></div>
+        <!-- Properties will be loaded here -->
+      </div>
+      <div id="status"></div>
+      <div class="button-container">
+        <button class="secondary" onclick="google.script.host.close()">Cancel</button>
+        <button class="primary" onclick="saveProperties()">Save Properties</button>
+      </div>
+    </div>
+
+    <script>
+      function showLoader(show) {
+        document.getElementById('loader').style.display = show ? 'block' : 'none';
+      }
+
+      window.onload = function() {
+        showLoader(true);
+        document.getElementById('status').textContent = 'Loading properties...';
+        google.script.run
+          .withSuccessHandler(displayProperties)
+          .withFailureHandler(showError)
+          .getScriptPropertiesForDialog_();
+      };
+
+      function displayProperties(properties) {
+        showLoader(false);
+        document.getElementById('status').textContent = '';
+        const form = document.getElementById('properties-form');
+        form.innerHTML = ''; // Clear loader
+        Object.keys(properties).sort().forEach(key => {
+          const itemDiv = document.createElement('div');
+          itemDiv.className = 'property-item';
+          const label = document.createElement('label');
+          label.htmlFor = key;
+          label.textContent = key + ':';
+          const input = document.createElement(properties[key].length > 60 || properties[key].includes('\n') ? 'textarea' : 'input');
+          input.type = 'text'; // Textarea will still behave like textarea
+          input.id = key;
+          input.name = key;
+          input.value = properties[key];
+          itemDiv.appendChild(label);
+          itemDiv.appendChild(input);
+          form.appendChild(itemDiv);
+        });
+      }
+
+      function saveProperties() {
+        showLoader(true);
+        document.getElementById('status').textContent = 'Saving...';
+        const inputs = document.getElementById('properties-form').querySelectorAll('input[type="text"], textarea');
+        const updatedProperties = {};
+        inputs.forEach(input => {
+          updatedProperties[input.name] = input.value;
+        });
+        google.script.run
+          .withSuccessHandler(function(response) {
+            showLoader(false);
+            document.getElementById('status').textContent = response;
+            if (response.toLowerCase().includes('success')) {
+              setTimeout(google.script.host.close, 1500);
+            }
+          })
+          .withFailureHandler(showError)
+          .updateScriptPropertiesFromDialog_(updatedProperties);
+      }
+
+      function showError(error) {
+        showLoader(false);
+        document.getElementById('status').textContent = 'Error: ' + error.message;
+        console.error('Error interacting with server script:', error);
+      }
+    </script>
+  </body>
+</html>
