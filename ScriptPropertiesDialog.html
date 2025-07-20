@@ -56,10 +56,10 @@
   <body>
     <div class="container">
       <h2>Edit Script Properties</h2>
-      <div id="properties-form">
-        <div class="loader" id="loader"></div>
-        <!-- Properties will be loaded here -->
-      </div>
+
+      <div class="loader" id="loader"></div>
+      <div id="properties-form"></div>
+ 
       <div id="status"></div>
       <div class="button-container">
         <button class="secondary" onclick="google.script.host.close()">Cancel</button>
@@ -78,7 +78,7 @@
         google.script.run
           .withSuccessHandler(displayProperties)
           .withFailureHandler(showError)
-          .getScriptPropertiesForDialog_();
+          .getScriptPropertiesForDialog();
       };
 
       function displayProperties(properties) {
@@ -120,7 +120,7 @@
             }
           })
           .withFailureHandler(showError)
-          .updateScriptPropertiesFromDialog_(updatedProperties);
+          .updateScriptPropertiesFromDialog(updatedProperties);
       }
 
       function showError(error) {

@@ -73,7 +73,7 @@ const CHARACTER_SHEET_NAME = 'Characters';
 /** Name of the sheet containing NPC data. */
 const NPC_SHEET_NAME = 'NPCs';
 /** Name of the sheet containing feed list data. */
-const FEED_LIST_SHEET_NAME = 'feed list';
+const FILL_REPLACE_SHEET_NAME = 'fill-replace-data';
 /** Name of the sheet listing character influences. */
 const INFLUENCES_SHEET_NAME = 'Influences';
 /** Name of the sheet listing elite influence details. */
@@ -128,6 +128,8 @@ const SCHEDULED_MSG_LOG_COL = 6;       // Column F: Send Log (Shifted)
 const NPC_SHEET_AVATAR_COL_SHEET_AVATAR_COL = 25; // *** NEW *** Column Y: Avatar URL
 
 /** Master list of all possible Influence Specializations */
+const ELITE_INFL_SHEET_NAME = 'Elite Infl.';
+const UW_INFL_SHEET_NAME = 'UW Infl.';
 const ALL_SPECIALIZATIONS = [
     "Academics", "Activist Organizations", "Arts", "Commercial Industry",
     "Criminal Organizations", "Emergency Services", "Entertainment", "Finance",
@@ -137,10 +139,10 @@ const ALL_SPECIALIZATIONS = [
 ].sort(); // Sort master list alphabetically
 
 /** Influence Summary Dialog Constants */
-const TOP_N_SPECS = 3; // How many items to show in Top/Bottom lists
+const TOP_N_SPECS = 10; // How many items to show in Top/Bottom lists
 
 /** Influence Fill Action Column Indices (0-based) for Elite/UW Sheets */
 // Assumes format: Date(A), Age(B), Character(C), Specialization(D), Action(E), Details(F), Blocks?(G), Output(H)
-const INFL_DATE_COL_IDX_ = 0; // Column A
-const INFL_SPEC_COL_IDX_ = 3; // Column D
-const INFL_ACTION_COL_IDX_ = 4; // Column E
+const INFL_DATE_COL_IDX = 0; // Column A
+const INFL_SPEC_COL_IDX = 3; // Column D
+const INFL_ACTION_COL_IDX = 4; // Column E

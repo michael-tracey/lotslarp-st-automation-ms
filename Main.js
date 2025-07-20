@@ -73,9 +73,10 @@ function onOpen() {
   menu.addSeparator();
 
   // Fill Cell Group
-  menu.addItem('Fill cell with Feed Data', 'fillCellWithFeedData_'); // Wrapper below
-  menu.addItem('Fill cell with Herd Data', 'fillCellWithHerdData_'); // Wrapper below
-  menu.addItem('Fill cell with Patrol Data', 'fillCellWithPatrolData_'); // Wrapper below
+  menu.addItem('Fill cell with Feed Data', 'fillCellWithFeedData_');
+  menu.addItem('Fill cell with Herd Data', 'fillCellWithHerdData_');
+  menu.addItem('Fill cell with Patrol Data', 'fillCellWithPatrolData_'); 
+  menu.addItem('Fill cell with Discipline Data','fillCellWithDisciplineData_')
   menu.addItem('Fill Cell with Influences (G&IT, WotS)', 'openInfluencePowerDialog_');
   menu.addSeparator();
 
@@ -88,6 +89,7 @@ function onOpen() {
 
   // Maintenance Submenu
   const maintenanceMenu = ui.createMenu('Maintenance');
+  maintenanceMenu.addItem('Force Reauthorization Check', 'forceReauthorizationCheck_');
   maintenanceMenu.addItem('Manage Script Properties', 'openScriptPropertiesDialog_'); // In ScriptPropertiesManager.gs
   maintenanceMenu.addSeparator();
   maintenanceMenu.addItem('Reinstall Form Trigger', 'reinstallFormTrigger_'); // In Triggers.gs
@@ -102,6 +104,7 @@ function onOpen() {
   maintenanceMenu.addItem('Manually Send Email for Selected Row', 'manuallySendEmail_'); // Wrapper below
   maintenanceMenu.addSeparator(); // Separator after manual actions
   maintenanceMenu.addItem('Fetch Downtimes (Placeholder)', 'fetchDowntimes_'); // Wrapper below
+  maintenanceMenu.addItem('Run Permission Test', 'testAllFeaturesAndPermissions'); // In PermissionTester.js
   menu.addSubMenu(maintenanceMenu); // Add Maintenance submenu
 
   // Add Test Mode Toggle to the *bottom* of the main menu
@@ -368,6 +371,7 @@ function onFormSubmitHandler_(e) {
 function fillCellWithFeedData_() { fillCellWithData_('feed'); } // In Actions.gs
 function fillCellWithHerdData_() { fillCellWithData_('herd'); } // In Actions.gs
 function fillCellWithPatrolData_() { fillCellWithData_('patrol'); } // In Actions.gs
+function fillCellWithDisciplineData_() { fillCellWithData_('discipline'); } // In Actions.gs
 function fillCellWithEliteInfluenceData_() { fillCellWithInfluenceData_(ELITE_INFLUENCES_SHEET_NAME, 'Elite'); } // In Actions.gs
 function fillCellWithUnderworldInfluenceData_() { fillCellWithInfluenceData_(UW_INFLUENCES_SHEET_NAME, 'Underworld'); } // In Actions.gs
 

@@ -8,12 +8,12 @@
 
 // ALL MOVED TO CONSTANTS.GS
 /*
-const ELITE_INFL_SHEET_NAME_ = 'Elite Infl.';
-const UW_INFL_SHEET_NAME_ = 'UW Infl.';
+const ELITE_INFL_SHEET_NAME = 'Elite Infl.';
+const UW_INFL_SHEET_NAME = 'UW Infl.';
 
 const INFL_DATE_COL_IDX_ = 0; // Column A
 const INFL_SPEC_COL_IDX_ = 3; // Column D
-const INFL_ACTION_COL_IDX_ = 4; // Column E
+const INFL_ACTION_COL_IDX = 4; // Column E
 const TOP_N_SPECS = 3;
 const ALL_SPECIALIZATIONS = [
     "Academics", "Activist Organizations", "Arts", "Commercial Industry",
@@ -99,12 +99,12 @@ function getInfluenceActionDetails_() {
 
                 for (let i = 1; i < rawData.length; i++) { // Skip header
                     const row = rawData[i];
-                    const actionString = String(row[INFL_ACTION_COL_IDX_] || '').trim();
+                    const actionString = String(row[INFL_ACTION_COL_IDX] || '').trim();
                     if (!actionString) continue; // Skip if no action specified
 
-                    const dateVal = row[INFL_DATE_COL_IDX_];
+                    const dateVal = row[INFL_DATE_COL_IDX];
                     const monthYear = formatDateAsMonthYear_(dateVal);
-                    const specialization = String(row[INFL_SPEC_COL_IDX_] || 'Unknown Spec').trim();
+                    const specialization = String(row[INFL_SPEC_COL_IDX] || 'Unknown Spec').trim();
                     const parsedAction = parseActionString_(actionString); // {level, name}
 
                     if (monthYear === 'Invalid Date' || monthYear === 'Invalid Date Input' || parsedAction.name === 'Unknown Action') {
@@ -137,11 +137,11 @@ function getInfluenceActionDetails_() {
     };
 
     // Process both sheets
-    eliteSheetFound = processSheet(ELITE_INFL_SHEET_NAME_, 'Elite');
-    uwSheetFound = processSheet(UW_INFL_SHEET_NAME_, 'Underworld');
+    eliteSheetFound = processSheet(ELITE_INFL_SHEET_NAME, 'Elite');
+    uwSheetFound = processSheet(UW_INFL_SHEET_NAME, 'Underworld');
 
     if (!eliteSheetFound && !uwSheetFound) {
-        ui.alert(`Could not find sheets "${ELITE_INFL_SHEET_NAME_}" or "${UW_INFL_SHEET_NAME_}" to generate summary.`);
+        ui.alert(`Could not find sheets "${ELITE_INFL_SHEET_NAME}" or "${UW_INFL_SHEET_NAME}" to generate summary.`);
         return null;
     }
 
@@ -311,7 +311,7 @@ function showDetailedInfluenceSummaryDialog_() {
         if (!rawSummaryData || Object.keys(rawSummaryData).length === 0) {
             Logger.log('No influence data found to display.');
              if (Object.keys(rawSummaryData || {}).length === 0 && rawSummaryData !== null) {
-                 ui.alert('No influence actions found in the "' + ELITE_INFL_SHEET_NAME_ + '" or "' + UW_INFL_SHEET_NAME_ + '" sheets to summarize.');
+                 ui.alert('No influence actions found in the "' + ELITE_INFL_SHEET_NAME + '" or "' + UW_INFL_SHEET_NAME + '" sheets to summarize.');
             }
             return;
         }
@@ -329,7 +329,7 @@ function showDetailedInfluenceSummaryDialog_() {
 
         ui.showModalDialog(htmlOutput, 'Detailed Influence Action Summary (by Level)'); // Update title
         Logger.log('Detailed Influence Summary Dialog displayed.');
-    } catch (error) {
+    } catch (error) {INFL_ACTION_COL_IDX
         Logger.log(`Error showing detailed influence summary dialog: ${error}\nStack: ${error.stack}`);
         ui.alert(`Error showing influence summary: ${error.message}`);
     }
@@ -349,13 +349,13 @@ function listDifferingInfluenceActions_() {
 
     // --- Process Elite Sheet ---
     try {
-        const eliteSheet = ss.getSheetByName(ELITE_INFL_SHEET_NAME_);
+        const eliteSheet = ss.getSheetByName(ELITE_INFL_SHEET_NAME);
         if (eliteSheet) {
             eliteSheetFound = true;
             const eliteData = eliteSheet.getDataRange().getValues();
-            Logger.log(`Processing ${eliteData.length - 1} rows from ${ELITE_INFL_SHEET_NAME_} for differences.`);
+            Logger.log(`Processing ${eliteData.length - 1} rows from ${ELITE_INFL_SHEET_NAME} for differences.`);
             for (let i = 1; i < eliteData.length; i++) {
-                const actionString = String(eliteData[i][INFL_ACTION_COL_IDX_] || '').trim();
+                const actionString = String(eliteData[i][INFL_ACTION_COL_IDX] || '').trim();
                 if (!actionString) continue;
                 const parsed = parseActionString_(actionString);
                 if (!eliteActionsByLevel[parsed.level]) {
@@ -364,19 +364,19 @@ function listDifferingInfluenceActions_() {
                 eliteActionsByLevel[parsed.level].add(parsed.name);
             }
         } else {
-             Logger.log(`Sheet "${ELITE_INFL_SHEET_NAME_}" not found for difference check.`);
+             Logger.log(`Sheet "${ELITE_INFL_SHEET_NAME}" not found for difference check.`);
         }
-    } catch(e) { Logger.log(`Error reading ${ELITE_INFL_SHEET_NAME_}: ${e}`); }
+    } catch(e) { Logger.log(`Error reading ${ELITE_INFL_SHEET_NAME}: ${e}`); }
 
      // --- Process Underworld Sheet ---
      try {
-        const uwSheet = ss.getSheetByName(UW_INFL_SHEET_NAME_);
+        const uwSheet = ss.getSheetByName(UW_INFL_SHEET_NAME);
         if (uwSheet) {
             uwSheetFound = true;
             const uwData = uwSheet.getDataRange().getValues();
-             Logger.log(`Processing ${uwData.length - 1} rows from ${UW_INFL_SHEET_NAME_} for differences.`);
+             Logger.log(`Processing ${uwData.length - 1} rows from ${UW_INFL_SHEET_NAME} for differences.`);
             for (let i = 1; i < uwData.length; i++) {
-                const actionString = String(uwData[i][INFL_ACTION_COL_IDX_] || '').trim(); // Use same index
+                const actionString = String(uwData[i][INFL_ACTION_COL_IDX] || '').trim(); // Use same index
                  if (!actionString) continue;
                  const parsed = parseActionString_(actionString);
                  if (!uwActionsByLevel[parsed.level]) {
@@ -385,12 +385,12 @@ function listDifferingInfluenceActions_() {
                  uwActionsByLevel[parsed.level].add(parsed.name);
             }
         } else {
-             Logger.log(`Sheet "${UW_INFLUENCES_SHEET_NAME_}" not found for difference check.`);
+             Logger.log(`Sheet "${UW_INFLUENCES_SHEET_NAME}" not found for difference check.`);
         }
-    } catch(e) { Logger.log(`Error reading ${UW_INFLUENCES_SHEET_NAME_}: ${e}`); }
+    } catch(e) { Logger.log(`Error reading ${UW_INFLUENCES_SHEET_NAME}: ${e}`); }
 
      if (!eliteSheetFound && !uwSheetFound) {
-        ui.alert(`Could not find sheets "${ELITE_INFLUENCES_SHEET_NAME_}" or "${UW_INFLUENCES_SHEET_NAME_}" to check differences.`);
+        ui.alert(`Could not find sheets "${ELITE_INFLUENCES_SHEET_NAME_}" or "${UW_INFLUENCES_SHEET_NAME}" to check differences.`);
         return;
     }
 

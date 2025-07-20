@@ -40,7 +40,11 @@ function sendDiscordWebhookMessage_(originalWebhookUrl, message, context = "Gene
     }
     return false; // Indicate failure
   }
-
+  if (targetWebhookUrl.includes('?')) {
+    targetWebhookUrl += '&wait=true';
+  } else {
+    targetWebhookUrl += '?wait=true';
+  }
   // Prepend Test Mode indicator to the message if active
   const finalMessage = testModeActive ? `🧪 **[TEST MODE]** 🧪\n${message}` : message;
   Logger.log(`[${context}] Preparing to send message (length: ${finalMessage.length}) via ${targetWebhookUrl}. Override User: ${overrideUsername || 'None'}, Override Avatar: ${overrideAvatarUrl ? 'Yes' : 'No'}`);
@@ -59,7 +63,7 @@ function sendDiscordWebhookMessage_(originalWebhookUrl, message, context = "Gene
 
     while (remainingMessage.length > 0) {
         let chunkContent;
-        let chunkPrefix = isFirstChunk ? prefix : `\n*(...continued)*\n`;
+        let chunkPrefix = isFirstChunk ? prefix : `\n`;
         let availableLength = MAX_DISCORD_MESSAGE_LENGTH - chunkPrefix.length;
 
         if (remainingMessage.length <= availableLength) {

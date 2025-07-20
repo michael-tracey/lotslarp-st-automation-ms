@@ -8,24 +8,24 @@
  * Fetches data from the 'feed list' sheet.
  * @returns {{headers: Array<string>, values: Array<Array<string>>}|null} Object with headers and values, or null if sheet not found.
  */
-function getFeedListData_() {
+function getFillReplaceListData_() {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
-    const feedListSheet = ss.getSheetByName(FEED_LIST_SHEET_NAME);
+    const fillReplaceSheet = ss.getSheetByName(FILL_REPLACE_SHEET_NAME);
 
-    if (!feedListSheet) {
-        const errorMessage = `Error: The sheet "${FEED_LIST_SHEET_NAME}" was not found.`;
+    if (!fillReplaceSheet) {
+        const errorMessage = `Error: The sheet "${FILL_REPLACE_SHEET_NAME}" was not found.`;
         SpreadsheetApp.getUi().alert(errorMessage);
         Logger.log(errorMessage);
         return null;
     }
 
     try {
-        const headers = feedListSheet.getRange(1, 1, 1, feedListSheet.getLastColumn()).getValues()[0];
-        const values = feedListSheet.getDataRange().getValues(); // Includes header row
-        Logger.log(`Retrieved data from '${FEED_LIST_SHEET_NAME}'. Headers: [${headers.join(', ')}]. Found ${values.length - 1} data rows.`);
+        const headers = fillReplaceSheet.getRange(1, 1, 1, fillReplaceSheet.getLastColumn()).getValues()[0];
+        const values = fillReplaceSheet.getDataRange().getValues(); // Includes header row
+        Logger.log(`Retrieved data from '${FILL_REPLACE_SHEET_NAME}'. Headers: [${headers.join(', ')}]. Found ${values.length - 1} data rows.`);
         return { headers, values };
     } catch (error) {
-        const errorMessage = `Error reading data from "${FEED_LIST_SHEET_NAME}": ${error.message}`;
+        const errorMessage = `Error reading data from "${FILL_REPLACE_SHEET_NAME}": ${error.message}`;
         SpreadsheetApp.getUi().alert(errorMessage);
         Logger.log(errorMessage);
         return null;

@@ -41,6 +41,7 @@ function logAudit_(action, sheetName, details = '') {
         } catch (e) {
              Logger.log('Could not get user email for audit log: ' + e);
         }
+        
 
 
         // Append the log entry
@@ -53,6 +54,44 @@ function logAudit_(action, sheetName, details = '') {
     }
 }
 
+
+/**
+ * Attempts an action that requires user authorization,
+ * aiming to trigger the Google OAuth consent screen if permissions are missing.
+ * This can help ensure the script has the necessary permissions.
+ *
+ * To use this:
+ * 1. Add this function to one of your .gs files (e.g., Utilities.js).
+ * 2. Open the Apps Script editor (Extensions > Apps Script).
+ * 3. In the editor, select "forceReauthorizationCheck_" from the function dropdown.
+ * 4. Click the "Run" button (play icon).
+ * 5. If prompted, review and grant the permissions.
+ */
+function forceReauthorizationCheck_() {
+  try {
+    // Attempt to access a service that requires specific authorization.
+    // Accessing the user's email is a common one that requires explicit consent.
+    const email = Session.getActiveUser().getEmail();
+    
+    // If the above line executes without error, permissions are likely in place.
+    SpreadsheetApp.getUi().alert(
+      'Authorization Check Successful',
+      'The script appears to have the necessary permissions to access your email address: ' + email,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+    Logger.log('forceReauthorizationCheck_: Permissions appear to be granted. User email retrieved.');
+
+  } catch (e) {
+    // An error here might mean the authorization prompt was shown and is being processed,
+    // or that there's another issue.
+    Logger.log('forceReauthorizationCheck_: An error occurred. This might be due to the authorization flow. Error: ' + e.toString());
+    SpreadsheetApp.getUi().alert(
+      'Authorization Status',
+      'If you were just prompted to authorize the script, please try your intended action again now that permissions should be granted. If no prompt appeared, an error occurred: ' + e.message,
+      SpreadsheetApp.getUi().ButtonSet.OK
+    );
+  }
+}
 
 // --- Test Mode Helpers ---
 

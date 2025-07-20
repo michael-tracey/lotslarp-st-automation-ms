@@ -19,10 +19,10 @@ function fillCellWithData_(type) {
   const sheetName = sheet.getName();
 
   try {
-    const feedData = getFeedListData_(); // In SheetData.gs
-    if (!feedData) return; // Error handled in getFeedListData_
+    const fillReplaceData = getFillReplaceListData_(); // In SheetData.gs
+    if (!fillReplaceData) return; // Error handled in getFeedListData_
 
-    const { headers, values } = feedData;
+    const { headers, values } = fillReplaceData;
     let columnIndex;
     let headerName;
 
@@ -34,6 +34,9 @@ function fillCellWithData_(type) {
     } else if (type === 'feed') {
       columnIndex = lowerCaseHeaders.indexOf('feed');
       headerName = 'Feed';
+    } else if (type === 'discipline') {
+      columnIndex = lowerCaseHeaders.indexOf('discipline');
+      headerName = 'Discipline';
     } else if (type === 'patrol') {
       columnIndex = lowerCaseHeaders.indexOf('patrol');
       headerName = 'Patrol';
@@ -45,7 +48,7 @@ function fillCellWithData_(type) {
     }
 
     if (columnIndex === -1) {
-        const errorMessage = `Error: Column header "${headerName}" not found (case-insensitive) in '${FEED_LIST_SHEET_NAME}'.`;
+        const errorMessage = `Error: Column header "${headerName}" not found (case-insensitive) in '${FILL_REPLACE_SHEET_NAME}'.`;
         SpreadsheetApp.getUi().alert(errorMessage);
         Logger.log(errorMessage);
         return;
@@ -57,7 +60,7 @@ function fillCellWithData_(type) {
                            .filter(value => value && String(value).trim() !== ''); // Filter empty values
 
     if (columnValues.length === 0) {
-        const errorMessage = `Error: No data found in the "${headerName}" column of '${FEED_LIST_SHEET_NAME}'.`;
+        const errorMessage = `Error: No data found in the "${headerName}" column of '${FILL_REPLACE_SHEET_NAME}'.`;
         SpreadsheetApp.getUi().alert(errorMessage);
         Logger.log(errorMessage);
         return;
@@ -312,7 +315,7 @@ function executeInfluenceFill(actionPower, context) {
                 const valueG_Blocks = parseFloat(row[colG_Index]);
                 const valueD_Spec = String(row[colD_Index]).trim();
                 const valueH_Output = row[colH_Index];
-                const actionName = String(row[INFL_ACTION_COL_IDX_] || 'Unknown Action').trim(); // Get action name for logging skipped blocks
+                const actionName = String(row[INFL_ACTION_COL_IDX] || 'Unknown Action').trim(); // Get action name for logging skipped blocks
 
                 // Logger.log(`--- Row ${rowNum} ---`);
                 // Logger.log(`Raw Values: Age='${row[colB_Index]}', Spec='${valueD_Spec}', Blocks='${row[colG_Index]}', Output='${valueH_Output}'`);

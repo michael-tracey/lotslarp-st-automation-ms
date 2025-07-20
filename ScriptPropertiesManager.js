@@ -26,7 +26,7 @@ function openScriptPropertiesDialog_() {
  * Fetches all script properties for the dialog.
  * @returns {Object} A plain JavaScript object الإعلامية (key-value pairs) of all script properties.
  */
-function getScriptPropertiesForDialog_() {
+function getScriptPropertiesForDialog() {
   try {
     const properties = PropertiesService.getScriptProperties().getProperties();
     Logger.log(`Fetched ${Object.keys(properties).length} script properties for dialog.`);
@@ -42,7 +42,7 @@ function getScriptPropertiesForDialog_() {
  * @param {Object} newProperties A plain JavaScript object where keys are property names and values are the new property values.
  * @returns {string} A status message indicating success or failure.
  */
-function updateScriptPropertiesFromDialog_(newProperties) {
+function updateScriptPropertiesFromDialog(newProperties) {
   try {
     const scriptProperties = PropertiesService.getScriptProperties();
     let updatedCount = 0;
