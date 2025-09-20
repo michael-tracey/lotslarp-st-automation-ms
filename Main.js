@@ -94,6 +94,7 @@ function onOpen() {
 
   const maintenanceMenu = ui.createMenu('Maintenance');
   maintenanceMenu.addItem('Manage Script Properties', 'openScriptPropertiesDialog_'); // In ScriptPropertiesManager.gs
+  maintenanceMenu.addItem('Re-import Downtime from Form', 'showReimportDowntimeDialog_');
   maintenanceMenu.addItem('Manually Send Discord for Selected Row', 'manuallySendDiscord_'); // Wrapper below
   maintenanceMenu.addItem('Manually Send Email for Selected Row', 'manuallySendEmail_'); // Wrapper below
   maintenanceMenu.addItem('Manually Test Usernames', 'manuallyTestCharacterNames_'); // Wrapper below
@@ -374,6 +375,7 @@ function fillCellWithEliteInfluenceData_() { fillCellWithInfluenceData_(ELITE_IN
 function fillCellWithUnderworldInfluenceData_() { fillCellWithInfluenceData_(UW_INFLUENCES_SHEET_NAME, 'Underworld'); } // In Actions.gs
 
 // --- Maintenance Wrappers ---
+function showReimportDowntimeDialog_() { showReimportDowntimeDialog(); } // In ReimportDowntime.js
 function manuallyTestCharacterNames_() { _manuallyTestCharacterNamesInternal_(); } // In SheetData.gs (renamed internal)
 function manuallySendDiscord_() { _manuallySendDiscordInternal_(); } // Wrapper below
 function manuallySendEmail_() { _manuallySendEmailInternal_(); } // Wrapper below

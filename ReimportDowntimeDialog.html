@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+    <style>
+      .container {
+        padding: 10px;
+      }
+      .row {
+        margin-bottom: 10px;
+      }
+      #status {
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Re-import Downtime from Form</h2>
+      <div class="row">
+        <label for="downtime-select">Select a downtime to re-import:</label>
+        <select id="downtime-select" style="width: 100%;">
+          <option value="">Loading...</option>
+        </select>
+      </div>
+      <div class="row">
+        <button id="reimport-button" class="action" disabled>Re-import</button>
+      </div>
+      <div id="status"></div>
+    </div>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        // Fetch the list of downtimes when the dialog loads
+        google.script.run
+          .withSuccessHandler(populateDowntimeList)
+          .withFailureHandler(showError)
+          .getFormResponses();
+      });
+
+      function populateDowntimeList(responses) {
+        const select = document.getElementById('downtime-select');
+        select.innerHTML = '<option value="">Select a downtime</option>'; // Clear loading message
+
+        if (responses && responses.length > 0) {
+          responses.forEach(response => {
+            // Assuming response is an object {id: 'responseId', characterName: 'Character Name'}
+            const option = document.createElement('option');
+            option.value = response.id;
+            option.textContent = response.characterName;
+            select.appendChild(option);
+          });
+          document.getElementById('reimport-button').disabled = false;
+        } else {
+          select.innerHTML = '<option value="">No responses found</option>';
+        }
+      }
+
+      document.getElementById('reimport-button').addEventListener('click', function() {
+        const select = document.getElementById('downtime-select');
+        const responseId = select.value;
+        if (!responseId) {
+          showError({message: 'Please select a downtime to re-import.'});
+          return;
+        }
+
+        this.disabled = true;
+        document.getElementById('status').textContent = 'Re-importing...';
+
+        google.script.run
+          .withSuccessHandler(reimportSuccess)
+          .withFailureHandler(showError)
+          .reimportFormResponse(responseId);
+      });
+
+      function reimportSuccess(message) {
+        document.getElementById('status').textContent = message;
+        document.getElementById('reimport-button').disabled = false;
+        // Optionally, close the dialog on success
+        // google.script.host.close();
+      }
+
+      function showError(error) {
+        const status = document.getElementById('status');
+        status.textContent = 'Error: ' + error.message;
+        status.style.color = 'red';
+        document.getElementById('reimport-button').disabled = false;
+      }
+    </script>
+  </body>
+</html>
