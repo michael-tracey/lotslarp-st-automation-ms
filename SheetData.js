@@ -567,3 +567,101 @@ function getCategoryCompletionData_(sheet, headerRegex, categories, itemType) {
         return null; // Return null on error
     }
 }
+
+/**
+ * Scans the active sheet for all unique background colors in submission rows.
+ * @returns {Array<string>|null} A sorted array of unique hex color strings, or null on error.
+ */
+function getUniqueBackgroundColors_() {
+    Logger.log('Scanning for unique background colors...');
+    try {
+        const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+        if (sheet.getLastRow() <= 1) return []; // No data
+
+        const range = sheet.getDataRange();
+        const backgroundColors = range.getBackgrounds();
+        const uniqueColors = new Set();
+
+        // Iterate through submission rows only (even rows, which are odd-indexed in the 2D array)
+        for (let i = 1; i < backgroundColors.length; i += 2) {
+            for (let j = 0; j < backgroundColors[i].length; j++) {
+                const color = backgroundColors[i][j];
+                // Ignore white, black, and fully transparent as they are typically defaults
+                if (color && color.toUpperCase() !== '#FFFFFF' && color.toUpperCase() !== '#000000') {
+                    uniqueColors.add(color);
+                }
+            }
+        }
+
+        const sortedColors = [...uniqueColors].sort();
+        Logger.log(`Found ${sortedColors.length} unique background colors.`);
+        return sortedColors;
+
+    } catch (error) {
+        Logger.log(`Error getting unique background colors: ${error}\nStack: ${error.stack}`);
+        return null;
+    }
+}
+
+
+/**
+ * Finds all downtime submissions with a specific background color that are missing a response.
+ * This function is callable from the client-side dialog.
+ * @param {string} hexColor The hex color string to search for (e.g., "#ffcccc").
+ * @returns {Array<{characterName: string, header: string, text: string, cell: string}>} An array of objects for each pending item.
+ */
+function getMissingResponsesByColor(hexColor) {
+    Logger.log(`Searching for missing responses with color: ${hexColor}`);
+     if (!hexColor || !/^#([0-9A-F]{3}){1,2}$/i.test(hexColor)) {
+        Logger.log(`Invalid hex color provided: "${hexColor}".`);
+        throw new Error("Invalid hex color format provided.");
+    }
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    try {
+        const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+        const dataRange = sheet.getDataRange();
+        const backgrounds = dataRange.getBackgrounds();
+        const values = dataRange.getValues();
+        const foundItems = [];
+
+        // Iterate submission rows (even-numbered sheet rows -> odd-indexed array rows)
+        for (let i = 1; i < values.length; i += 2) {
+             if (i + 1 >= values.length) continue; // Ensure response row exists
+
+            const submissionRowValues = values[i];
+            const submissionRowBgs = backgrounds[i];
+            const responseRowValues = values[i + 1];
+            const characterName = responseRowValues[CHARACTER_NAME_COL - 1] || 'Unknown';
+
+            // Check all cells in the submission row
+            for (let j = 0; j < submissionRowValues.length; j++) {
+                const submissionValue = String(submissionRowValues[j] || '').trim();
+                const cellBg = submissionRowBgs[j];
+
+                // Check if color matches and there's text
+                if (submissionValue && cellBg.toLowerCase() === hexColor.toLowerCase()) {
+                    // Check if corresponding response cell is empty
+                    const responseValue = String(responseRowValues[j] || '').trim();
+                    if (responseValue === '') {
+                        const header = headers[j] || `Column ${j+1}`;
+                        const responseCellA1 = getColumnLetter(j + 1) + (i + 2); // i is 0-based, +2 for 1-based and next row
+
+                        foundItems.push({
+                            characterName: characterName,
+                            header: header,
+                            text: submissionValue.length > 150 ? submissionValue.substring(0, 147) + '...' : submissionValue,
+                            cell: responseCellA1
+                        });
+                    }
+                }
+            }
+        }
+
+        Logger.log(`Found ${foundItems.length} pending responses for color ${hexColor}.`);
+        return foundItems;
+    } catch (error) {
+        Logger.log(`Error getting missing responses by color: ${error}\nStack: ${error.stack}`);
+        // Re-throw to send a meaningful error to the client
+        throw new Error(`Failed to retrieve data from the sheet: ${error.message}`);
+    }
+}

@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <title>Find Pending Responses by Color</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container { max-width: 800px; margin: 0 auto; }
+        h3 {
+            font-size: 1.5em;
+            font-weight: 500;
+            margin-bottom: 16px;
+            color: #343a40;
+            border-bottom: 1px solid #dee2e6;
+            padding-bottom: 8px;
+        }
+        p { color: #495057; font-size: 14px; margin-bottom: 20px; }
+        .form-group { display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+        label { font-weight: 500; color: #495057; }
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            background-color: #007bff;
+            color: white;
+            transition: background-color 0.2s ease;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+
+        /* --- Custom Select Dropdown Styles --- */
+        .custom-select {
+            position: relative;
+            display: inline-block;
+            width: 250px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background-color: #fff;
+        }
+        .selected-option {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        .options-list {
+            display: none;
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #ced4da;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            width: 100%;
+            z-index: 10;
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .options-list.active { display: block; }
+        .options-list li {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background-color 0.15s ease-in-out;
+        }
+        .options-list li:hover { background-color: #f1f3f5; }
+        .color-swatch {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            vertical-align: middle;
+            margin-right: 10px;
+            flex-shrink: 0; /* Prevent swatch from shrinking */
+        }
+
+        /* --- Results and Spinner --- */
+        #results-area { margin-top: 20px; }
+        table {
+            width: 100%; border-collapse: collapse; background-color: #fff;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 6px; overflow: hidden;
+        }
+        th, td { padding: 12px 15px; border: 1px solid #dee2e6; text-align: left; font-size: 14px; vertical-align: middle; }
+        th { background-color: #e9ecef; font-weight: 500; color: #495057; }
+        tr.clickable-row { cursor: pointer; transition: background-color 0.15s ease-in-out; }
+        tr.clickable-row:hover td { background-color: #f1f3f5; }
+        .character-name { font-weight: 500; color: #007bff; }
+        .cell-id { font-family: monospace; font-size: 0.95em; color: #6c757d; }
+        .submitted-text { font-style: italic; color: #495057; max-width: 300px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .spinner { display: none; margin-left: 10px; border: 3px solid #f3f3f3; border-top: 3px solid #007bff; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3>Find Pending Responses by Color</h3>
+        <p>Select a background color from the dropdown to find all downtime submissions with that color that are still missing a response.</p>
+
+        <div class="form-group">
+            <label>Select Color:</label>
+            <div class="custom-select">
+                <div class="selected-option">
+                    <span class="color-swatch" style="background-color: #FFFFFF;"></span>
+                    <span>-- Please choose a color --</span>
+                </div>
+                <ul class="options-list">
+                    <? if (colors && colors.length > 0) { ?>
+                        <? colors.forEach(color => { ?>
+                            <li data-value="<?= color ?>">
+                                <span class="color-swatch" style="background-color: <?= color ?>;"></span>
+                                <?= color ?>
+                            </li>
+                        <? }); ?>
+                    <? } ?>
+                </ul>
+            </div>
+            <input type="hidden" id="selected-color-value" />
+
+            <button id="find-button">Find</button>
+            <div class="spinner" id="spinner"></div>
+        </div>
+
+        <div id="results-area"></div>
+    </div>
+
+    <script>
+    window.onload = function() {
+        const customSelect = document.querySelector('.custom-select');
+        const selectedOption = document.querySelector('.selected-option');
+        const optionsList = document.querySelector('.options-list');
+        const options = document.querySelectorAll('.options-list li');
+        const hiddenInput = document.getElementById('selected-color-value');
+        const findButton = document.getElementById('find-button');
+        const resultsArea = document.getElementById('results-area');
+        const spinner = document.getElementById('spinner');
+
+        selectedOption.addEventListener('click', () => {
+            optionsList.classList.toggle('active');
+        });
+
+        options.forEach(option => {
+            option.addEventListener('click', () => {
+                const value = option.getAttribute('data-value');
+                const swatchColor = option.querySelector('.color-swatch').style.backgroundColor;
+
+                selectedOption.querySelector('span:last-child').textContent = value;
+                selectedOption.querySelector('.color-swatch').style.backgroundColor = swatchColor;
+                hiddenInput.value = value;
+
+                optionsList.classList.remove('active');
+            });
+        });
+
+        // Close dropdown if clicked outside
+        document.addEventListener('click', (e) => {
+            if (!customSelect.contains(e.target)) {
+                optionsList.classList.remove('active');
+            }
+        });
+
+        findButton.addEventListener('click', () => {
+            const selectedColor = hiddenInput.value;
+            if (!selectedColor) {
+                resultsArea.innerHTML = '<p style="color: red;">Please select a color first.</p>';
+                return;
+            }
+
+            spinner.style.display = 'inline-block';
+            findButton.disabled = true;
+            resultsArea.innerHTML = '';
+
+            google.script.run
+                .withSuccessHandler(displayResults)
+                .withFailureHandler(showError)
+                .getMissingResponsesByColor(selectedColor);
+        });
+
+        function displayResults(foundItems) {
+            spinner.style.display = 'none';
+            findButton.disabled = false;
+            let html = '';
+            if (foundItems && foundItems.length > 0) {
+                html += `
+                    <p>Found ${foundItems.length} pending response(s). Click a row to jump to the cell.</p>
+                    <table>
+                        <thead>
+                            <tr><th>Character</th><th>Header</th><th>Submitted Text</th><th>Cell to Edit</th></tr>
+                        </thead>
+                        <tbody>`;
+                foundItems.forEach(entry => {
+                    html += `
+                        <tr class="clickable-row" onclick="jumpToCell_('${entry.cell}')">
+                            <td class="character-name">${escapeHtml(entry.characterName)}</td>
+                            <td>${escapeHtml(entry.header)}</td>
+                            <td class="submitted-text" title="${escapeHtml(entry.text)}">${escapeHtml(entry.text)}</td>
+                            <td class="cell-id">${escapeHtml(entry.cell)}</td>
+                        </tr>`;
+                });
+                html += `</tbody></table>`;
+            } else {
+                html = '<p style="text-align: center; color: #28a745; font-weight: 500;">No pending responses found for this color.</p>';
+            }
+            resultsArea.innerHTML = html;
+        }
+
+        function showError(error) {
+            spinner.style.display = 'none';
+            findButton.disabled = false;
+            resultsArea.innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+        }
+    }; // End window.onload
+
+    function jumpToCell_(cellAddress) {
+        google.script.run
+            .withSuccessHandler(() => google.script.host.close())
+            .withFailureHandler(err => console.error("Jump failed:", err))
+            .jumpToCell(cellAddress);
+    }
+
+    function escapeHtml(unsafe) {
+        if (!unsafe) return '';
+        return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+    </script>
+</body>
+</html>

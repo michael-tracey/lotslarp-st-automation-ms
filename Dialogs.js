@@ -269,3 +269,32 @@ function showMissingDowntimeDialog() {
     Logger.log('Menu item "Show Missing Downtime Responses" clicked.');
     showMissingItemsDialog_('Downtime', getMissingDowntimeData_); // In SheetData.gs
 }
+
+/**
+ * Gets unique colors from the sheet and displays the "Find by Color" dialog.
+ */
+function showFindPendingByColorDialog() {
+    Logger.log('Showing Find Pending by Color Dialog...');
+    const ui = SpreadsheetApp.getUi();
+    try {
+        const uniqueColors = getUniqueBackgroundColors_(); // In SheetData.gs
+        if (!uniqueColors) { // Null on error from function
+            ui.alert("Could not retrieve background colors from the sheet. Check logs for details.");
+            return;
+        }
+
+        const template = HtmlService.createTemplateFromFile('FindPendingByColorDialog');
+        template.colors = uniqueColors; // Pass the array of color strings
+
+        const htmlOutput = template.evaluate()
+            .setWidth(850)
+            .setHeight(500);
+
+        ui.showModalDialog(htmlOutput, 'Find Pending Responses by Color');
+        Logger.log('Find Pending by Color Dialog displayed.');
+
+    } catch (error) {
+        Logger.log(`Error showing Find Pending by Color Dialog: ${error}\nStack: ${error.stack}`);
+        ui.alert(`Error showing dialog: ${error.message}`);
+    }
+}

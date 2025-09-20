@@ -62,53 +62,51 @@ function onOpen() {
   const ui = SpreadsheetApp.getUi();
   const menu = ui.createMenu('Storyteller Menu');
 
-  // Dialogs Group
   menu.addItem('Downtime Editor popup', 'openEditCellDialog'); // In Dialogs.gs
   menu.addItem('Show Downtime Progress', 'showDowntimeProgressDialog'); // In Dialogs.gs
-  menu.addItem('Show Missing Downtime Responses', 'showMissingDowntimeDialog'); // In Dialogs.gs
-  menu.addItem('Show Influences Progress', 'showInfluencesProgressDialog'); // In Dialogs.gs
-  menu.addItem('Show Resources Progress', 'showResourcesProgressDialog'); // In Dialogs.gs
-  menu.addSeparator();
-  menu.addItem('Show Detailed Influence Summary', 'showDetailedInfluenceSummaryDialog_');
   menu.addSeparator();
 
-  // Fill Cell Group
-  menu.addItem('Fill cell with Feed Data', 'fillCellWithFeedData_');
-  menu.addItem('Fill cell with Herd Data', 'fillCellWithHerdData_');
-  menu.addItem('Fill cell with Patrol Data', 'fillCellWithPatrolData_'); 
-  menu.addItem('Fill cell with Discipline Data','fillCellWithDisciplineData_')
-  menu.addItem('Fill Cell with Influences (G&IT, WotS)', 'openInfluencePowerDialog_');
-  menu.addSeparator();
+  const downtimeMenu = ui.createMenu('Downtime Management');
+  downtimeMenu.addItem('Bulk Send Downtimes to Discord', 'showBulkSendDowntimesDialog'); // In BulkSendDowntimes.js
+  downtimeMenu.addItem('Show Missing Downtime Responses', 'showMissingDowntimeDialog'); // In Dialogs.gs
+  downtimeMenu.addItem('Find Pending Responses by Color', 'showFindPendingByColorDialog'); // In Dialogs.gs
+  menu.addSubMenu(downtimeMenu);
 
-  // Discord Actions Group
-  menu.addItem('Send Downtime Report to Discord', 'sendDowntimeReportToDiscord'); // In Discord.gs
-  menu.addItem('Send Missing Downtime Responses to Discord', 'sendMissingDowntimeResponsesToDiscord'); // In Discord.gs
-  menu.addItem('Test Discord to ST Channel', 'sendTestMessageToStorytellers_'); // In Discord.gs
-  menu.addSeparator();
- 
+  const influenceMenu = ui.createMenu('Influence & Resources');
+  influenceMenu.addItem('Show Detailed Influence Summary', 'showDetailedInfluenceSummaryDialog_');
+  influenceMenu.addItem('Show Influences Progress', 'showInfluencesProgressDialog'); // In Dialogs.gs
+  influenceMenu.addItem('Show Resources Progress', 'showResourcesProgressDialog'); // In Dialogs.gs
+  influenceMenu.addItem('Fill Cell with Influences (G&IT, WotS)', 'openInfluencePowerDialog_');
+  menu.addSubMenu(influenceMenu);
 
-  // Maintenance Submenu
+  const fillCellsMenu = ui.createMenu('Fill Cells');
+  fillCellsMenu.addItem('Fill cell with Feed Data', 'fillCellWithFeedData_');
+  fillCellsMenu.addItem('Fill cell with Herd Data', 'fillCellWithHerdData_');
+  fillCellsMenu.addItem('Fill cell with Patrol Data', 'fillCellWithPatrolData_'); 
+  fillCellsMenu.addItem('Fill cell with Discipline Data','fillCellWithDisciplineData_')
+  menu.addSubMenu(fillCellsMenu);
+
+  const discordMenu = ui.createMenu('Discord Actions');
+  discordMenu.addItem('Send Downtime Report to Discord', 'sendDowntimeReportToDiscord'); // In Discord.gs
+  discordMenu.addItem('Send Missing Downtime Responses to Discord', 'sendMissingDowntimeResponsesToDiscord'); // In Discord.gs
+  discordMenu.addItem('Test Discord to ST Channel', 'sendTestMessageToStorytellers_'); // In Discord.gs
+  menu.addSubMenu(discordMenu);
+
   const maintenanceMenu = ui.createMenu('Maintenance');
-  maintenanceMenu.addItem('Force Reauthorization Check', 'forceReauthorizationCheck_');
   maintenanceMenu.addItem('Manage Script Properties', 'openScriptPropertiesDialog_'); // In ScriptPropertiesManager.gs
-  maintenanceMenu.addSeparator();
-  maintenanceMenu.addItem('Reinstall Form Trigger', 'reinstallFormTrigger_'); // In Triggers.gs
-  maintenanceMenu.addItem('Reinstall Edit Trigger', 'reinstallOnEditTrigger_'); // In Triggers.gs
-  maintenanceMenu.addItem('Reinstall Scheduled Message Trigger', 'setupScheduledMessagesTrigger_')
-  maintenanceMenu.addSeparator();
-  maintenanceMenu.addItem('Manually Send Scheduled Messages','sendScheduledMessages_')
-  maintenanceMenu.addItem('Manually Test Usernames', 'manuallyTestCharacterNames_'); // Wrapper below
-  maintenanceMenu.addItem('Check Character Count', 'checkCharacterCount_'); // In Discord.gs
-  maintenanceMenu.addSeparator(); // Separator before manual actions
   maintenanceMenu.addItem('Manually Send Discord for Selected Row', 'manuallySendDiscord_'); // Wrapper below
   maintenanceMenu.addItem('Manually Send Email for Selected Row', 'manuallySendEmail_'); // Wrapper below
-  maintenanceMenu.addSeparator(); // Separator after manual actions
-  maintenanceMenu.addItem('Fetch Downtimes (Placeholder)', 'fetchDowntimes_'); // Wrapper below
+  maintenanceMenu.addItem('Manually Test Usernames', 'manuallyTestCharacterNames_'); // Wrapper below
+  maintenanceMenu.addItem('Check Character Count', 'checkCharacterCount_'); // In Discord.gs
   maintenanceMenu.addItem('Run Permission Test', 'testAllFeaturesAndPermissions'); // In PermissionTester.js
-  menu.addSubMenu(maintenanceMenu); // Add Maintenance submenu
+  const triggerMenu = ui.createMenu('Reinstall Triggers');
+  triggerMenu.addItem('Reinstall Form Trigger', 'reinstallFormTrigger_'); // In Triggers.gs
+  triggerMenu.addItem('Reinstall Edit Trigger', 'reinstallOnEditTrigger_'); // In Triggers.gs
+  triggerMenu.addItem('Reinstall Scheduled Message Trigger', 'setupScheduledMessagesTrigger_')
+  maintenanceMenu.addSubMenu(triggerMenu);
+  menu.addSubMenu(maintenanceMenu);
 
-  // Add Test Mode Toggle to the *bottom* of the main menu
-  menu.addSeparator(); // Separator before the toggle
+  menu.addSeparator();
   const isTestMode = isDiscordTestMode_(); // In Utilities.gs
   const testModeLabel = `${isTestMode ? '✅ ' : ''}Toggle Discord Test Mode`;
   menu.addItem(testModeLabel, 'toggleDiscordTestMode_'); // Wrapper below

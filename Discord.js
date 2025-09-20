@@ -217,7 +217,7 @@ function sendDiscordWebhookMessage_(originalWebhookUrl, message, context = "Gene
  * @param {GoogleAppsScript.Spreadsheet.Sheet} sheet The active sheet.
  * @param {number} responseRowIndex The row index of the response row (where checkbox was checked).
  */
-function handleSendDiscord_(sheet, responseRowIndex) {
+function handleSendDiscord_(sheet, responseRowIndex, isBulkSend = false) {
     const submissionRowIndex = responseRowIndex - 1;
     if (submissionRowIndex < 1) {
         Logger.log(`Cannot send Discord for row ${responseRowIndex}: No corresponding submission row found.`);
@@ -257,15 +257,15 @@ function handleSendDiscord_(sheet, responseRowIndex) {
          return;
     }
 
-    // Confirmation dialog (Only show if triggered by user action, not manual call?)
-    // For now, keep confirmation always for safety when checkbox is involved.
-    const ui = SpreadsheetApp.getUi();
-    const confirmMessage = `Send Downtimes to ${targetDescription} via Discord?`;
-    const confirm = ui.alert(confirmMessage, ui.ButtonSet.YES_NO);
-    if (confirm !== ui.Button.YES) {
-        Logger.log(`Discord send cancelled by user for ${targetDescription} (Row ${responseRowIndex}).`);
-        try { sheet.getRange(responseRowIndex, SEND_DISCORD_COL).setValue(false); } catch(e){} // Uncheck box
-        return;
+    if (!isBulkSend) {
+      const ui = SpreadsheetApp.getUi();
+      const confirmMessage = `Send Downtimes to ${targetDescription} via Discord?`;
+      const confirm = ui.alert(confirmMessage, ui.ButtonSet.YES_NO);
+      if (confirm !== ui.Button.YES) {
+          Logger.log(`Discord send cancelled by user for ${targetDescription} (Row ${responseRowIndex}).`);
+          try { sheet.getRange(responseRowIndex, SEND_DISCORD_COL).setValue(false); } catch(e){} // Uncheck box
+          return false;
+      }
     }
 
     // --- Construct Message Body ---
@@ -317,6 +317,7 @@ function handleSendDiscord_(sheet, responseRowIndex) {
 
             timestampCell.setValue(new Date()).setBackgroundRGB(229, 255, 204); // Green background for timestamp
             statusCell.setValue('sent');
+            checkboxCell.setValue(true);
             checkboxCell.setBackgroundRGB(229, 255, 204); // Green background for checkbox
 
             Logger.log(`Successfully initiated Discord send for ${targetDescription}.`);
@@ -338,6 +339,7 @@ function handleSendDiscord_(sheet, responseRowIndex) {
         SpreadsheetApp.getUi().alert(`An unexpected error occurred sending the Discord message for ${targetDescription}: ${error.message}`);
         try { sheet.getRange(responseRowIndex, SEND_DISCORD_COL).setValue(false); } catch(e){} // Uncheck box on error
     }
+    return success;
 }
 
 

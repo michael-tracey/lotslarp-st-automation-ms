@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+    <style>
+      .container {
+        padding: 10px;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th, td {
+        border: 1px solid #ddd;
+        padding: 8px;
+        text-align: left;
+      }
+      th {
+        background-color: #f2f2f2;
+      }
+      .status-icon {
+        font-size: 18px;
+      }
+      .success {
+        color: green;
+      }
+      .error {
+        color: red;
+      }
+      .in-progress {
+        color: orange;
+      }
+      .sent {
+        color: grey;
+      }
+      .pending {
+        color: #b5b5b5;
+      }
+      .controls {
+        margin-top: 10px;
+      }
+      .debug-state {
+        margin-top: 10px;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h2>Bulk Send Downtimes</h2>
+      <div class="debug-state">
+        Debug State: <span id="debug-state"></span>
+      </div>
+      <div class="controls">
+        <button id="send-button" class="action">Send</button>
+        <button id="pause-button" disabled>Pause</button>
+        <button id="stop-button" disabled>Stop</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Character Name</th>
+            <th>Response Count</th>
+            <th>ST Word Count</th>
+            <th>Player Word Count</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="downtime-table-body">
+        </tbody>
+      </table>
+    </div>
+    <script>
+      let isPaused = false;
+      let isStopped = false;
+      let statusInterval;
+
+      document.getElementById('send-button').addEventListener('click', () => {
+        document.getElementById('send-button').disabled = true;
+        document.getElementById('pause-button').disabled = false;
+        document.getElementById('stop-button').disabled = false;
+        isPaused = false;
+        isStopped = false;
+        google.script.run.startSending();
+        statusInterval = setInterval(() => {
+          google.script.run.withSuccessHandler(updateDowntimeList).withFailureHandler(showError).getSendStatus();
+        }, 2000);
+      });
+
+      document.getElementById('pause-button').addEventListener('click', () => {
+        isPaused = !isPaused;
+        document.getElementById('pause-button').textContent = isPaused ? 'Resume' : 'Pause';
+        if (isPaused) {
+          google.script.run.pauseSending();
+        } else {
+          google.script.run.resumeSending();
+        }
+      });
+
+      document.getElementById('stop-button').addEventListener('click', () => {
+        isStopped = true;
+        clearInterval(statusInterval);
+        document.getElementById('send-button').disabled = false;
+        document.getElementById('pause-button').disabled = true;
+        document.getElementById('stop-button').disabled = true;
+        google.script.run.stopSending();
+      });
+
+      function updateDowntimeList(downtimes) {
+        const tableBody = document.getElementById('downtime-table-body');
+        tableBody.innerHTML = '';
+        let allProcessed = true;
+        downtimes.forEach(downtime => {
+          const row = document.createElement('tr');
+          let statusIcon = '';
+          if (downtime.isSent) {
+            statusIcon = '<span class="status-icon sent">&#10004; Sent</span>';
+          } else if (downtime.status === 'sent') {
+            statusIcon = '<span class="status-icon success">&#10004;</span>';
+          } else if (downtime.status === 'error') {
+            statusIcon = `<span class="status-icon error" title="${downtime.error}">&#10006;</span>`;
+          } else if (downtime.status === 'in-progress') {
+            statusIcon = '<span class="status-icon in-progress">&#8635;</span>';
+            allProcessed = false;
+          } else if (downtime.status === 'pending') {
+            statusIcon = '<span class="status-icon pending">Not Sent</span>';
+            allProcessed = false;
+          } else {
+            statusIcon = '<span class="status-icon"></span>';
+            allProcessed = false;
+          }
+          row.innerHTML = (
+            `<td>${downtime.characterName}</td>` +
+            `<td>${downtime.responseCount}</td>` +
+            `<td>${downtime.stWordCount}</td>` +
+            `<td>${downtime.playerWordCount}</td>` +
+            `<td>${statusIcon}</td>`
+          );
+          tableBody.appendChild(row);
+        });
+
+        if (allProcessed) {
+          clearInterval(statusInterval);
+          document.getElementById('send-button').disabled = true;
+          document.getElementById('pause-button').disabled = true;
+          document.getElementById('stop-button').disabled = true;
+          google.script.run.withSuccessHandler(showSummary).getSendSummary();
+        }
+      }
+
+      function showSummary(summary) {
+        alert(`Bulk send complete!\n\nSuccessful: ${summary.successCount}\nFailed: ${summary.failureCount}`);
+      }
+
+      function showError(error) {
+        console.error(error);
+        alert('An error occurred: ' + error.message);
+      }
+      
+      function updateDebugState(debugState) {
+        document.getElementById('debug-state').textContent = debugState;
+      }
+
+      google.script.run.withSuccessHandler(updateDowntimeList).getAllDowntimes();
+      google.script.run.withSuccessHandler(updateDebugState).getDebugState();
+    </script>
+  </body>
+</html>

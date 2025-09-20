@@ -16,7 +16,18 @@ Key features include:
 
 ## 2. Setup & Configuration
 
-### 2.1. Initial Script Properties Setup
+### 2.1. Initial Project Setup
+
+Before configuring any script properties, you must first initialize the project. This will create all the necessary sheets with the correct headers.
+
+1.  Open your new Google Sheet.
+2.  Go to **Storyteller Menu > Maintenance > Initialise Project**.
+3.  A dialog will appear asking for confirmation. Click **Yes**.
+4.  The script will create all the required sheets (e.g., `Characters`, `NPCs`, `Log`, etc.). A confirmation will appear when it's done.
+
+After initializing the project, you can proceed to configure the script properties.
+
+### 2.2. Initial Script Properties Setup
 
 Before using the script, several properties must be configured in the Apps Script editor:
 
@@ -48,7 +59,7 @@ Before using the script, several properties must be configured in the Apps Scrip
 
     **Important:** If you see alerts about unconfigured properties when opening the sheet, please ensure these are correctly set.
 
-### 2.2. Sheet Naming Conventions
+### 2.3. Sheet Naming Conventions
 
 The script relies on specific sheet names for its operations:
 
@@ -147,6 +158,7 @@ These functions help populate cells with randomized or calculated data. Generall
 
 ### 3.4. Maintenance Submenu
 
+* **`Initialise Project`**: Creates all the necessary sheets for the project to function correctly. This includes sheets for characters, NPCs, influences, and more. This should be the very first action you take when setting up a new spreadsheet for this project.
 * **`Reinstall Form Trigger`**: Deletes and recreates the trigger that automatically processes new Google Form submissions. Use this if form submissions stop being added to the sheet.
 * **`Reinstall Edit Trigger`**: Deletes and recreates the `onEdit` trigger that handles checkbox actions and name validation. Use this if those features stop working.
 * **`Setup Scheduled Message Trigger`**: Deletes any existing triggers for `sendScheduledMessages_` and creates a new time-driven trigger to run that function hourly. Use this to enable or reset the scheduled announcement feature.
