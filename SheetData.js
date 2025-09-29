@@ -399,12 +399,16 @@ function getMissingItemsData_(sheet, headerRegex, itemType) {
         if (lastRow <= 1) return []; // No data rows
 
         const missingItems = [];
-        const data = sheet.getDataRange().getValues(); // Get all data at once
+        const dataRange = sheet.getDataRange();
+        const data = dataRange.getValues();
+        const backgrounds = dataRange.getBackgrounds();
+
 
         // Iterate through data rows (skip header)
         // Row pairs: Submission (even index in data array, odd row number), Response (odd index in data array, even row number)
         for (let i = 1; i < data.length; i += 2) { // Step by 2
             const submissionRow = data[i]; // Even index = Submission Row
+            const submissionRowBgs = backgrounds[i];
             // Check if it's a valid submission row (has timestamp)
             if (submissionRow[TIMESTAMP_COL - 1]) {
                 // Check if there's a corresponding response row
@@ -419,15 +423,16 @@ function getMissingItemsData_(sheet, headerRegex, itemType) {
                             const submissionValue = submissionRow[colIndex] ? String(submissionRow[colIndex]).trim() : "";
                             const responseValue = responseRow[colIndex] ? String(responseRow[colIndex]).trim() : "";
                             const responseCellA1 = getColumnLetter(colIndex + 1) + (i + 1 + 1); // +1 for 1-based sheet row, +1 because i is 0-based data index
+                            const backgroundColor = submissionRowBgs[colIndex];
 
                             // Check if submission exists but response is empty
                             if (submissionValue !== "" && responseValue === "") {
-                                const truncatedText = submissionValue.length > 100 ? submissionValue.substring(0, 97) + "..." : submissionValue;
                                 missingItems.push({
                                     characterName: characterName,
                                     header: header,
-                                    text: truncatedText, // Show the submitted text (truncated)
-                                    cell: responseCellA1 // The cell needing the response
+                                    text: submissionValue,
+                                    cell: responseCellA1, // The cell needing the response
+                                    backgroundColor: backgroundColor
                                 });
                             }
                         }
