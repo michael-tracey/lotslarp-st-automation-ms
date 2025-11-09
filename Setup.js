@@ -35,7 +35,8 @@ function initialiseProject_() {
         { name: CHARACTER_LOG_SHEET_NAME, headers: ['Timestamp', 'Character Name', 'Action', 'Notes'] },
         { name: AUDIT_LOG_SHEET_NAME, headers: ['Timestamp', 'User', 'Action', 'Sheet Name', 'Details'] },
         { name: SCHEDULED_MSG_SHEET_NAME, headers: ['ID', 'Message', 'Channel', 'Timestamp', 'Status'] },
-        { name: WEBHOOKS_SHEET_NAME, headers: ['Name', 'URL'] }
+        { name: WEBHOOKS_SHEET_NAME, headers: ['Name', 'URL'] },
+        { name: 'narrators', headers: ['Name', 'Email', 'Hex Color', 'Username', 'Password'] }
     ];
 
     let sheetsCreated = 0;

@@ -670,3 +670,76 @@ function getMissingResponsesByColor(hexColor) {
         throw new Error(`Failed to retrieve data from the sheet: ${error.message}`);
     }
 }
+
+/**
+ * Fetches narrator data from the 'Narrators' sheet.
+ * Assumes 'Name' is in the first column and 'Color' (hex code) is in the second.
+ * @returns {Array<{name: string, color: string}>|null} Array of narrator objects with name and color, or null if the sheet isn't found.
+ */
+function getNarrators_() {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    // Use a constant for the sheet name for maintainability
+    const NARRATOR_SHEET_NAME = 'Narrators';
+    const narratorSheet = ss.getSheetByName(NARRATOR_SHEET_NAME);
+
+    if (!narratorSheet) {
+        // This function runs onOpen, so avoid a UI alert which can be intrusive.
+        // Log the issue for debugging purposes.
+        Logger.log(`Sheet "${NARRATOR_SHEET_NAME}" not found. Cannot build dynamic narrator menu.`);
+        return null;
+    }
+
+    try {
+        const lastRow = narratorSheet.getLastRow();
+        if (lastRow < 1) { // Check if sheet is completely empty
+            Logger.log(`No data found in "${NARRATOR_SHEET_NAME}" sheet.`);
+            return [];
+        }
+
+        // Read headers from the first row
+        const headers = narratorSheet.getRange(1, 1, 1, narratorSheet.getLastColumn()).getValues()[0];
+        
+        // If only header row exists, return empty array
+        if (lastRow === 1) {
+            Logger.log(`Only header row found in "${NARRATOR_SHEET_NAME}" sheet.`);
+            return [];
+        }
+
+        // Read data starting from the second row
+        const data = narratorSheet.getRange(2, 1, lastRow - 1, headers.length).getValues();
+
+        const narrators = data.map(row => {
+            const narrator = {};
+            let hexColor = null; // Initialize hexColor
+
+            headers.forEach((header, index) => {
+                const lowerCaseHeader = header.toLowerCase();
+                narrator[lowerCaseHeader] = row[index];
+                if (lowerCaseHeader === "hex color") { // Check for "Hex Color" header
+                    hexColor = row[index];
+                }
+            });
+
+            // Prioritize "Hex Color" for narrator.color
+            if (hexColor) {
+                narrator.color = hexColor;
+            }
+
+            return narrator;
+        }).filter(narrator => {
+            // Validate color format (simple hex color check)
+            const isValidColor = /^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/.test(narrator.color);
+            if (!isValidColor) {
+                Logger.log(`Narrator "${narrator.name}" has an invalid color format: "${narrator.color}". It will be excluded.`);
+            }
+            return isValidColor;
+        });
+
+        Logger.log(`Found ${narrators.length} valid narrators in "${NARRATOR_SHEET_NAME}".`);
+        return narrators;
+    } catch (error) {
+        Logger.log(`Error reading from "${NARRATOR_SHEET_NAME}" sheet: ${error}`);
+        // In case of error, return null to indicate failure.
+        return null;
+    }
+}

@@ -422,3 +422,50 @@ function executeInfluenceFill(actionPower, context) {
         throw new Error(`An error occurred: ${error.message}`);
     }
 }
+
+/**
+ * Sets the background color of the active cell based on the narrator at the given index.
+ * @param {number} index The index of the narrator in the list returned by getNarrators_().
+ */
+function assignNarratorByIndex_(index) {
+  const ui = SpreadsheetApp.getUi();
+  const cell = SpreadsheetApp.getActiveRange();
+
+  if (!cell) {
+    ui.alert('Please select a cell before assigning a narrator.');
+    return;
+  }
+
+  const narrators = getNarrators_(); // From SheetData.js
+  if (!narrators || narrators.length === 0) {
+    ui.alert('No narrators found. Please ensure the "Narrators" sheet exists and contains data.');
+    return;
+  }
+
+  // Sort narrators alphabetically by name to match the order in the UI menu
+  narrators.sort((a, b) => a.name.localeCompare(b.name));
+
+  if (index < 0 || index >= narrators.length) {
+    Logger.log(`Invalid narrator index: ${index}. Narrators length: ${narrators.length}`);
+    ui.alert('Error: Invalid narrator selected.');
+    return;
+  }
+
+  const narrator = narrators[index];
+  try {
+    cell.setBackground(narrator.color);
+    if (isColorDark(narrator.color)) {
+      cell.setFontColor('#FFFFFF'); // White font for dark backgrounds
+    } else {
+      cell.setFontColor('#000000'); // Black font for light backgrounds
+    }
+    Logger.log(`Assigned narrator ${narrator.name} (color: ${narrator.color}) to cell ${cell.getA1Notation()}`);
+    // Optional: Add a note to the cell with the narrator's name
+    // cell.setNote(`Assigned to: ${narrator.name}`);
+  } catch (error) {
+    Logger.log(`Error setting background color for cell ${cell.getA1Notation()}: ${error}`);
+    ui.alert(`Error assigning narrator: ${error.message}`);
+  }
+}
+
+

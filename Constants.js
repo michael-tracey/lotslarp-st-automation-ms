@@ -99,6 +99,8 @@ const PROP_TEST_WEBHOOK = 'TEST_WEBHOOK';
 const PROP_ANNOUNCEMENT_WEBHOOK = 'ANNOUNCEMENT_WEBHOOK'; // For #announcements channel
 const PROP_IC_CHAT_WEBHOOK = 'IC_CHAT_WEBHOOK';         // *** NEW *** For #ic-chat channel
 const PROP_IC_NEWS_FEED_WEBHOOK = 'IC_NEWS_FEED_WEBHOOK'; // *** NEW *** For #ic-news-feed channel
+const PROP_LARP_NAME = 'LARP_NAME';
+const PROP_TASK_COLOR_HEX = 'TASK_COLOR_HEX'; // For 'Any Narrator or Storyteller' assignment
 
 /** Discord Send Retry Constants */
 const MAX_RETRIES = 2; // Max number of retries (total 3 attempts)

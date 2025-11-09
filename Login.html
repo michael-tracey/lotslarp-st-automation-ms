@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #1a1a1a; /* Very dark gray background */
+            color: #e0e0e0; /* Light gray text */
+            font-family: 'Verdana', 'Geneva', sans-serif;
+        }
+        .login-container {
+            background-color: #2c2c2c; /* Dark gray container */
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            border: 1px solid #444;
+            text-align: center;
+            width: 320px;
+        }
+        h2 {
+            margin-top: 0;
+            margin-bottom: 24px;
+            color: #b71c1c; /* Dark red for headers */
+            font-family: 'Georgia', serif;
+            font-weight: bold;
+        }
+        .block {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #ccc;
+        }
+        input {
+            width: 100%;
+            background-color: #333;
+            color: #e0e0e0;
+            border: 1px solid #555;
+        }
+        .button-container {
+            text-align: center;
+            margin-top: 24px;
+        }
+        #login-btn {
+            background-color: #b71c1c; /* Dark red button */
+            border-color: #b71c1c;
+            color: white;
+            font-weight: bold;
+        }
+        #login-btn:hover {
+            background-color: #9a1616;
+            border-color: #9a1616;
+        }
+        #status {
+            margin-top: 16px;
+            font-weight: bold;
+            color: #e0e0e0;
+        }
+        .error-text {
+            color: #e57373; /* Lighter red for errors */
+        }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <h2><?= larpName ?></h2>
+    <div class="block">
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" class="width-100">
+    </div>
+    <div class="block">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" class="width-100">
+    </div>
+    <div class="button-container">
+        <button class="action" id="login-btn">Login</button>
+    </div>
+    <p id="status"></p>
+</div>
+
+<script>
+    document.getElementById('login-btn').addEventListener('click', function() {
+        var username = document.getElementById('username').value;
+        var password = document.getElementById('password').value;
+        var statusEl = document.getElementById('status');
+
+        if (!username || !password) {
+            statusEl.innerText = 'Please enter a username and password.';
+            statusEl.className = 'error-text';
+            return;
+        }
+
+        statusEl.innerText = 'Logging in...';
+        statusEl.className = '';
+
+        google.script.run
+            .withSuccessHandler(function(result) {
+                if (result.success) {
+                    statusEl.innerText = 'Login successful! Reloading...';
+                    statusEl.className = '';
+                    window.top.location.href = '<?= appUrl ?>';
+                } else {
+                    statusEl.innerText = 'Error: ' + result.message;
+                    statusEl.className = 'error-text';
+                }
+            })
+            .withFailureHandler(function(err) {
+                statusEl.innerText = 'Error: ' + err.message;
+                statusEl.className = 'error-text';
+            })
+            .login(username, password);
+    });
+</script>
+</body>
+</html>

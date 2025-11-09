@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body { font-family: sans-serif; text-align: center; padding: 40px; background-color: #f8f9fa; }
+      .container { max-width: 600px; margin: auto; background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+      h1 { color: #333; }
+      p { color: #555; line-height: 1.6; }
+      button { font-size: 16px; padding: 12px 24px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 4px; text-decoration: none; }
+      a { text-decoration: none; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Authorization Required</h1>
+      <p>To use this application, you must grant it permission to view your Google account email address.</p>
+      <p>This one-time authorization does not grant any other permissions to your account.</p>
+      <br>
+      <a href="<?= authorizationUrl ?>" target="_top"><button>Authorize and Continue</button></a>
+    </div>
+  </body>
+</html>

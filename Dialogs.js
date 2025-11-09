@@ -191,6 +191,15 @@ function updateCellValue(newValue, row, col) {
     // Log to Audit Sheet
     logAudit_('Cell Edit via Dialog', sheetName, `Cell: ${cellA1}, Old: ${oldValue}, New: ${newValue}`); // In Utilities.gs
 
+    // --- Add editor note ---
+    if (user) {
+      const userName = getNarratorNameByEmail_(user) || user;
+      const note = `Last edited by: ${userName} on ${new Date().toLocaleString()}`;
+      cell.setNote(note);
+      Logger.log(`Set note on ${cellA1} for user ${userName}`);
+    }
+    // ---
+
 
     // Optionally change background color if cell is now non-empty
     if (newValue && String(newValue).trim() !== '' && String(oldValue).trim() === '') {

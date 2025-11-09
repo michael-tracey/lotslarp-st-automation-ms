@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <title>Manual Authorization</title>
+    <style>
+        body { font-family: sans-serif; margin: 20px; background-color: #f8f9fa; }
+        .container { max-width: 700px; margin: 20px auto; background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        h1 { color: #0056b3; }
+        p, li { line-height: 1.6; }
+        code { font-family: monospace; background-color: #e9ecef; padding: 2px 4px; border-radius: 3px; }
+        .token-input { width: 95%; padding: 8px; font-size: 16px; margin-top: 10px; }
+        button { font-size: 16px; padding: 10px 15px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 4px; margin-top: 10px; }
+        #status { margin-top: 15px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Manual Authorization Required</h1>
+        <p>The automatic login failed, likely due to your browser's security settings (such as blocking third-party cookies).</p>
+        <p>Please complete the manual process below to continue.</p>
+        <hr>
+        <ol>
+            <li><button id="token-btn" onclick="openTokenWindow()">1. Generate Authorization Token</button></li>
+            <li>Copy the token displayed in the new tab.</li>
+            <li>Paste the token below and click "Verify".</li>
+        </ol>
+
+        <input type="text" id="token-input" class="token-input" placeholder="Paste token here...">
+        <br>
+        <button onclick="verifyToken()">2. Verify Token</button>
+
+        <p id="status"></p>
+    </div>
+
+    <script>
+        const appUrl = "<?= appUrl ?>";
+        const tokenUrl = appUrl + "?action=getToken";
+
+        function openTokenWindow() {
+            window.open(tokenUrl, '_blank');
+            document.getElementById('status').textContent = 'Token window opened. Please copy the token and paste it above.';
+        }
+
+        function verifyToken() {
+            const token = document.getElementById('token-input').value;
+            if (!token || !token.trim()) {
+                document.getElementById('status').textContent = 'Please paste a token first.';
+                return;
+            }
+            // Reload the main app URL with the token as a parameter
+            const verifyUrl = appUrl + "?authToken=" + encodeURIComponent(token);
+            window.top.location.href = verifyUrl;
+        }
+    </script>
+</body>
+</html>

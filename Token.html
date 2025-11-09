@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <title>Your Token</title>
+    <style>
+        body { font-family: sans-serif; text-align: center; padding-top: 40px; }
+        .token-box { 
+            font-family: monospace; 
+            font-size: 20px; 
+            font-weight: bold; 
+            background-color: #eee; 
+            padding: 20px; 
+            border: 2px dashed #ccc; 
+            display: inline-block; 
+            cursor: text;
+        }
+    </style>
+</head>
+<body>
+    <h2>Your Authorization Token</h2>
+    <p>Copy the code below, then close this tab and paste it into the main application window.</p>
+    <div class="token-box" onclick="selectText('token')">
+        <span id="token"><?= token ?></span>
+    </div>
+    <p id="copy-status"></p>
+
+    <script>
+        function selectText(nodeId) {
+            const node = document.getElementById(nodeId);
+            if (document.body.createTextRange) {
+                const range = document.body.createTextRange();
+                range.moveToElementText(node);
+                range.select();
+            } else if (window.getSelection) {
+                const selection = window.getSelection();
+                const range = document.createRange();
+                range.selectNodeContents(node);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+            try {
+                document.execCommand('copy');
+                document.getElementById('copy-status').textContent = 'Copied to clipboard!';
+            } catch(e) {
+                document.getElementById('copy-status').textContent = 'Could not automatically copy.';
+            }
+        }
+    </script>
+</body>
+</html>

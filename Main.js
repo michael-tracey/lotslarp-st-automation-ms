@@ -5,9 +5,9 @@
  * and top-level menu item functions.
  */
 
-// ============================================================================
-// === SCRIPT INITIALIZATION & MENU =========================================
-// ============================================================================
+// ============================================================================ 
+// === SCRIPT INITIALIZATION & MENU ========================================= 
+// ============================================================================ 
 
 /**
  * Runs when the spreadsheet is opened. Sets up script properties (if needed)
@@ -25,8 +25,8 @@ function onOpen() {
     [PROP_DISCORD_TEST_MODE]: 'false', // Default test mode to off
     [PROP_TEST_WEBHOOK]: 'YOUR_TEST_DISCORD_WEBHOOK_URL_HERE', // Replace if needed
     [PROP_IC_NEWS_FEED_WEBHOOK]: 'PROP_IC_NEWS_FEED_WEBHOOK',
-    [PROP_IC_CHAT_WEBHOOK]: 'PROP_IC_CHAT_WEBHOOK',
-    [PROP_ANNOUNCEMENT_WEBHOOK]: 'PROP_ANNOUNCEMENT_WEBHOOK'
+    [PROP_LARP_NAME]: 'My Awesome LARP',
+    [PROP_TASK_COLOR_HEX]: '#FFFF00' // Default color for 'Any Narrator or Storyteller'
   };
 
   let propertiesUpdated = false;
@@ -55,6 +55,9 @@ function onOpen() {
        if (!scriptProperties.getProperty(PROP_TEST_WEBHOOK) || scriptProperties.getProperty(PROP_TEST_WEBHOOK).includes('YOUR_')) {
           SpreadsheetApp.getUi().alert('Please configure the Test Discord Webhook URL in Project Settings > Script properties if you plan to use test mode.');
       }
+       if (!scriptProperties.getProperty(PROP_TASK_COLOR_HEX) || scriptProperties.getProperty(PROP_TASK_COLOR_HEX).includes('#')) {
+          SpreadsheetApp.getUi().alert('Please configure the TASK_COLOR_HEX in Project Settings > Script properties if you want to change the default color for "Any Narrator or Storyteller".');
+      }
   }
 
 
@@ -65,6 +68,34 @@ function onOpen() {
   menu.addItem('Downtime Editor popup', 'openEditCellDialog'); // In Dialogs.gs
   menu.addItem('Show Downtime Progress', 'showDowntimeProgressDialog'); // In Dialogs.gs
   menu.addSeparator();
+
+  // --- Dynamic Narrator Assignment Menu ---
+  const narrators = getNarrators_(); // From SheetData.js
+  if (narrators && narrators.length > 0) {
+    const assignToMenu = ui.createMenu('Assign to');
+    const MAX_NARRATORS_IN_MENU = 50;
+    const taskColorHex = scriptProperties.getProperty(PROP_TASK_COLOR_HEX) || '#FFFF00'; // Default to yellow if not set
+
+    // Add 'Any Narrator or Storyteller' option
+    assignToMenu.addItem(`Any Narrator or Storyteller [${taskColorHex}]`, 'assignAnyNarratorOrStoryteller_');
+
+    // Sort narrators alphabetically
+    narrators.sort((a, b) => a.name.localeCompare(b.name));
+
+    narrators.forEach((narrator, index) => {
+      if (index < MAX_NARRATORS_IN_MENU) {
+        assignToMenu.addItem(`${narrator.name} [${narrator.color}]`, `assignNarrator${index + 1}`);
+      }
+    });
+
+    if (narrators.length > MAX_NARRATORS_IN_MENU) {
+      ui.alert(`Warning: Only the first ${MAX_NARRATORS_IN_MENU} narrators are shown in the 'Assign to' menu. Please increase MAX_NARRATORS_IN_MENU in Main.js if needed.`);
+      Logger.log(`Warning: More narrators (${narrators.length}) than available menu slots (${MAX_NARRATORS_IN_MENU}).`);
+    }
+    menu.addSubMenu(assignToMenu);
+  } else {
+    Logger.log('No narrators found or "Narrators" sheet is empty/missing. "Assign to" menu not created.');
+  }
 
   const downtimeMenu = ui.createMenu('Downtime Management');
   downtimeMenu.addItem('Bulk Send Downtimes to Discord', 'showBulkSendDowntimesDialog'); // In BulkSendDowntimes.js
@@ -93,6 +124,8 @@ function onOpen() {
   menu.addSubMenu(discordMenu);
 
   const maintenanceMenu = ui.createMenu('Maintenance');
+  maintenanceMenu.addItem('Open Web App', 'openWebApp_');
+  maintenanceMenu.addItem('Encrypt Narrator Password', 'showEncryptPasswordDialog_');
   maintenanceMenu.addItem('Manage Script Properties', 'openScriptPropertiesDialog_'); // In ScriptPropertiesManager.gs
   maintenanceMenu.addItem('Re-import Downtime from Form', 'showReimportDowntimeDialog_');
   maintenanceMenu.addItem('Manually Send Discord for Selected Row', 'manuallySendDiscord_'); // Wrapper below
@@ -118,9 +151,9 @@ function onOpen() {
   Logger.log(`Custom menu created. Discord Test Mode is currently ${isTestMode ? 'ON' : 'OFF'}.`);
 }
 
-// ============================================================================
-// === EVENT HANDLERS (onEdit, onFormSubmit) ================================
-// ============================================================================
+// ============================================================================ 
+// === EVENT HANDLERS (onEdit, onFormSubmit) ================================ 
+// ============================================================================ 
 // These remain in the main file as they are directly called by triggers.
 
 /**
@@ -144,134 +177,103 @@ function onEditHandler_(e) {
   const sheetName = sheet.getName();
 
   // --- Basic Checks ---
-  // 1. Is it the header row?
-  if (editedRow <= 1) {
-    return;
-  }
-  // 2. Is it a sheet named like "Month Year"?
+  if (editedRow <= 1) return; // Is it the header row?
   const isMonthYearSheet = MONTH_YEAR_SHEET_REGEX.test(sheetName);
-  Logger.log(`onEdit: Edited sheet: "${sheetName}", Is Month-Year format: ${isMonthYearSheet}`);
-  if (!isMonthYearSheet) {
-    return; // Only operate on sheets with the correct naming convention
-  }
+  if (!isMonthYearSheet) return; // Is it a sheet named like "Month Year"?
 
-  // Check if the edited column is one we care about
-  const relevantCols = [SEND_DISCORD_COL, SEND_EMAIL_COL, CHARACTER_NAME_COL, STATUS_COL];
-  if (!relevantCols.includes(editedCol)) {
-      return; // Exit if the edit wasn't in a relevant column
-  }
-
-  // Get the *current* state of the checkbox (if applicable) and the status cell
-  // Note: For name/status edits, isChecked will be null.
-  const isChecked = (editedCol === SEND_DISCORD_COL || editedCol === SEND_EMAIL_COL) ? e.range.isChecked() : null;
-  // Status is always relevant for the response row (odd rows now)
-  // If editing Col C/D/E, get status from the same row. If editing Col B, use its own value.
-  const statusRowIndex = (editedCol === STATUS_COL) ? editedRow : (editedRow % 2 !== 0 ? editedRow : editedRow -1); // Get status from response row (odd) unless editing status itself
-  // Ensure statusRowIndex is valid before getting range
-  const statusValue = (statusRowIndex > 1 && statusRowIndex <= sheet.getLastRow()) ? sheet.getRange(statusRowIndex, STATUS_COL).getValue() : '';
-
-
-  // Log details for debugging checkbox issues
-  Logger.log(`onEditHandler_ Triggered: Sheet='${sheetName}', Cell='${e.range.getA1Notation()}', Col=${editedCol}, Row=${editedRow}, isChecked=${isChecked} (Type: ${typeof isChecked}), StatusRow=${statusRowIndex}, StatusValue='${statusValue}'`);
+  // Log the entry point of the edit
+  Logger.log(`onEdit: Sheet='${sheetName}', Cell='${e.range.getA1Notation()}', User='${e.user ? e.user.getEmail() : 'N/A'}', NewValue='${e.value}'`);
 
   try {
-    let proceed = true; // Assume proceeding unless confirmation needed and denied
+    // --- Get Status Value (often needed) ---
+    // Status is on the response row (odd). If editing an even row, check status of the row below.
+    const statusRowIndex = (editedRow % 2 !== 0) ? editedRow : editedRow + 1;
+    const statusValue = (statusRowIndex <= sheet.getLastRow()) ? sheet.getRange(statusRowIndex, STATUS_COL).getValue() : '';
+
+    // ======================================================================== 
+    // === ACTION HANDLERS ==================================================== 
+    // ======================================================================== 
 
     // --- Action: Send via Discord Checkbox ---
-    if (editedCol === SEND_DISCORD_COL && editedRow % 2 !== 0) { // Checkbox is on ODD row
-        // Trigger only if checked AND status is NOT 'sent'
-        const shouldTriggerDiscord = (isChecked === true && statusValue !== 'sent');
-        Logger.log(`Discord Check (Row ${editedRow}): shouldTriggerDiscord=${shouldTriggerDiscord}`);
-
-        if (shouldTriggerDiscord) {
-            // Confirmation for Old Sheets
-            const currentTargetSheet = getDowntimeSheetName_(); // In Utilities.gs
-            Logger.log(`Current target sheet from properties: "${currentTargetSheet}"`);
-            if (sheetName !== currentTargetSheet) {
-                Logger.log(`Confirmation needed for Discord: Edit on old sheet ('${sheetName}') vs current ('${currentTargetSheet}').`);
-                const ui = SpreadsheetApp.getUi();
-                const response = ui.alert('Confirmation Needed', `You are triggering Discord send on an OLDER month's sheet ('${sheetName}').\n\nAre you sure?`, ui.ButtonSet.YES_NO);
-                Logger.log(`User response to confirmation: ${response}`);
-                if (response !== ui.Button.YES) {
-                    Logger.log('User cancelled Discord action on old sheet.');
-                    proceed = false;
-                    try { e.range.setValue(false); Logger.log(`Checkbox at ${e.range.getA1Notation()} unchecked due to cancellation.`); } catch (err) {}
-                } else {
-                    Logger.log('User confirmed Discord action on old sheet.');
-                }
-            }
-            // Perform Action if Proceeding
-            if (proceed) {
-                Logger.log(`Proceeding with Send Discord for response row ${editedRow}.`);
-                handleSendDiscord_(sheet, editedRow); // In Discord.gs
-            }
-        } else if (isChecked === true && statusValue === 'sent') {
-            // If checked but already sent, ALERT, log, and uncheck
-            Logger.log(`Discord action on row ${editedRow} blocked: Status is already 'sent'. Alerting user.`);
-            SpreadsheetApp.getUi().alert(
-                'Action Blocked',
-                'Cannot send to Discord because the status for this row is already "sent".\n\nTo resend, please change the status back to "unprocessed" or use the "Manually Send Discord for Selected Row" option under the Maintenance menu.',
-                SpreadsheetApp.getUi().ButtonSet.OK
-            );
-            e.range.setValue(false); // Uncheck the box after alert
+    if (editedCol === SEND_DISCORD_COL && editedRow % 2 !== 0) {
+      const isChecked = e.range.isChecked();
+      Logger.log(`Discord Checkbox edit on row ${editedRow}. Checked: ${isChecked}, Status: '${statusValue}'`);
+      if (isChecked === true && statusValue !== 'sent') {
+        // Confirmation for Old Sheets
+        if (sheetName !== getDowntimeSheetName_()) {
+          const ui = SpreadsheetApp.getUi();
+          const response = ui.alert('Confirmation Needed', `You are triggering Discord send on an OLDER month's sheet ('${sheetName}').\n\nAre you sure?`, ui.ButtonSet.YES_NO);
+          if (response !== ui.Button.YES) {
+            e.range.setValue(false); // Uncheck on cancel
+            return;
+          }
         }
+        handleSendDiscord_(sheet, editedRow); // In Discord.gs
+      } else if (isChecked === true && statusValue === 'sent') {
+        SpreadsheetApp.getUi().alert('Action Blocked', 'Cannot send to Discord because the status for this row is already "sent".\n\nTo resend, please change the status back to "unprocessed" or use the "Manually Send Discord for Selected Row" option under the Maintenance menu.', SpreadsheetApp.getUi().ButtonSet.OK);
+        e.range.setValue(false); // Uncheck the box
+      }
     }
+
     // --- Action: Send via Email Checkbox ---
-    else if (editedCol === SEND_EMAIL_COL && editedRow % 2 !== 0) { // Checkbox is on ODD row
-        // Trigger only if checked (IGNORE status)
-        const shouldTriggerEmail = (isChecked === true);
-        Logger.log(`Email Check (Row ${editedRow}): shouldTriggerEmail=${shouldTriggerEmail}`);
-
-        if (shouldTriggerEmail) {
-             // Confirmation for Old Sheets
-            const currentTargetSheet = getDowntimeSheetName_(); // In Utilities.gs
-             Logger.log(`Current target sheet from properties: "${currentTargetSheet}"`);
-            if (sheetName !== currentTargetSheet) {
-                Logger.log(`Confirmation needed for Email: Edit on old sheet ('${sheetName}') vs current ('${currentTargetSheet}').`);
-                const ui = SpreadsheetApp.getUi();
-                const response = ui.alert('Confirmation Needed', `You are triggering Email send on an OLDER month's sheet ('${sheetName}').\n\nAre you sure?`, ui.ButtonSet.YES_NO);
-                Logger.log(`User response to confirmation: ${response}`);
-                if (response !== ui.Button.YES) {
-                    Logger.log('User cancelled Email action on old sheet.');
-                    proceed = false;
-                    try { e.range.setValue(false); Logger.log(`Checkbox at ${e.range.getA1Notation()} unchecked due to cancellation.`); } catch (err) {}
-                } else {
-                     Logger.log('User confirmed Email action on old sheet.');
-                }
-            }
-             // Perform Action if Proceeding
-            if (proceed) {
-                Logger.log(`Proceeding with Send Email for response row ${editedRow}.`);
-                handleSendEmail_(sheet, editedRow); // In Email.gs
-            }
+    else if (editedCol === SEND_EMAIL_COL && editedRow % 2 !== 0) {
+      const isChecked = e.range.isChecked();
+      Logger.log(`Email Checkbox edit on row ${editedRow}. Checked: ${isChecked}`);
+      if (isChecked === true) {
+        if (sheetName !== getDowntimeSheetName_()) {
+          const ui = SpreadsheetApp.getUi();
+          const response = ui.alert('Confirmation Needed', `You are triggering Email send on an OLDER month's sheet ('${sheetName}').\n\nAre you sure?`, ui.ButtonSet.YES_NO);
+          if (response !== ui.Button.YES) {
+            e.range.setValue(false); // Uncheck on cancel
+            return;
+          }
         }
-        // No status check needed here for email based on user request
+        handleSendEmail_(sheet, editedRow); // In Email.gs
+      }
     }
-    // --- Character Name Validation ---
-    // Name is on the ODD row (response row)
+
+    // --- Action: Character Name Validation ---
     else if (editedCol === CHARACTER_NAME_COL && editedRow % 2 !== 0) {
       Logger.log(`Character name edited in cell ${e.range.getA1Notation()}. Validating.`);
       validateCharacterNameCell_(e.range); // In SheetData.gs
     }
-    // --- Log Manual Status Changes ---
-    // Status is on the ODD row (response row)
-    else if (editedCol === STATUS_COL && editedRow % 2 !== 0 && e.oldValue !== e.value) { // Check if status value actually changed
-         Logger.log(`Status manually changed in cell ${e.range.getA1Notation()}.`);
-         logAudit_('Manual Status Change', sheetName, `Cell: ${e.range.getA1Notation()}, Old: ${e.oldValue}, New: ${e.value}`); // In Utilities.gs
+
+    // --- Action: Log Manual Status Changes ---
+    else if (editedCol === STATUS_COL && editedRow % 2 !== 0 && e.oldValue !== e.value) {
+      Logger.log(`Status manually changed in cell ${e.range.getA1Notation()}.`);
+      logAudit_('Manual Status Change', sheetName, `Cell: ${e.range.getA1Notation()}, Old: ${e.oldValue}, New: ${e.value}`); // In Utilities.gs
+    }
+
+    // --- Action: Add Note to Edited Response Cell ---
+    else {
+      const isResponseRow = editedRow % 2 !== 0;
+      const isResponseColumn = editedCol > CHARACTER_NAME_COL;
+
+      // Check if it's a meaningful edit in a response cell
+      if (isResponseRow && isResponseColumn && e.value !== e.oldValue) {
+        const userEmail = e.user ? e.user.getEmail() : null;
+        if (userEmail) {
+          const userName = getNarratorNameByEmail_(userEmail) || userEmail;
+          const note = `Last edited by: ${userName} on ${new Date().toLocaleString()}`;
+          e.range.setNote(note);
+          Logger.log(`Set note on ${e.range.getA1Notation()} for user ${userName}`);
+        }
+      }
     }
 
   } catch (error) {
-    Logger.log(`Error in onEditHandler_ for range ${e.range.getA1Notation()}: ${error} \nStack: ${error.stack}`);
+    Logger.log(`Error in onEditHandler_ for range ${e.range.getA1Notation()}: ${error} 
+Stack: ${error.stack}`);
     // Try to uncheck box on error if it was a checkbox action that was proceeding
-     if (proceed && (editedCol === SEND_DISCORD_COL || editedCol === SEND_EMAIL_COL)) {
-         try { e.range.setValue(false); } catch(err) {}
-     }
+    if ((editedCol === SEND_DISCORD_COL || editedCol === SEND_EMAIL_COL)) {
+      try { e.range.setValue(false); } catch(err) {}
+    }
   }
 }
 
 
 /**
- * Handles the 'onFormSubmit' event trigger for the linked Google Form.
+ * Handles the 'onFormSubmit' event trigger for the Google Form.
  * Processes the form response and adds it to the downtime sheet.
  *
  * @param {GoogleAppsScript.Events.FormsOnFormSubmit} e The event object.
@@ -345,7 +347,8 @@ function onFormSubmitHandler_(e) {
     Logger.log(`Successfully processed form submission for ${characterNameResponse}.`);
 
   } catch (error) {
-    Logger.log(`Error processing form submission from ${email}: ${error} \nStack: ${error.stack}`);
+    Logger.log(`Error processing form submission from ${email}: ${error} 
+Stack: ${error.stack}`);
     // Notify STs about the failure
     try {
         const stWebhook = PropertiesService.getScriptProperties().getProperty(PROP_ST_WEBHOOK);
@@ -361,10 +364,18 @@ function onFormSubmitHandler_(e) {
   }
 }
 
-// ============================================================================
-// === MENU ITEM WRAPPERS ===================================================
-// ============================================================================
+
+// ============================================================================ 
+// === MENU ITEM WRAPPERS =================================================== 
+// ============================================================================ 
 // These functions simply call the real logic located in other files.
+
+function openWebApp_() {
+  const url = ScriptApp.getService().getUrl();
+  const html = `<script>window.open('${url}', '_blank');google.script.host.close();</script>`;
+  const userInterface = HtmlService.createHtmlOutput(html).setHeight(10).setWidth(100);
+  SpreadsheetApp.getUi().showModalDialog(userInterface, 'Opening Web App...');
+}
 
 // --- Fill Cell Wrappers ---
 function fillCellWithFeedData_() { fillCellWithData_('feed'); } // In Actions.gs
@@ -373,6 +384,29 @@ function fillCellWithPatrolData_() { fillCellWithData_('patrol'); } // In Action
 function fillCellWithDisciplineData_() { fillCellWithData_('discipline'); } // In Actions.gs
 function fillCellWithEliteInfluenceData_() { fillCellWithInfluenceData_(ELITE_INFLUENCES_SHEET_NAME, 'Elite'); } // In Actions.gs
 function fillCellWithUnderworldInfluenceData_() { fillCellWithInfluenceData_(UW_INFLUENCES_SHEET_NAME, 'Underworld'); } // In Actions.gs
+
+/**
+ * Assigns 'Any Narrator or Storyteller' to the active cell and sets its background color.
+ */
+function assignAnyNarratorOrStoryteller_() {
+  const ui = SpreadsheetApp.getUi();
+  const activeRange = SpreadsheetApp.getActiveRange();
+  if (!activeRange) {
+    ui.alert('Please select a cell to assign.');
+    return;
+  }
+
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const taskColorHex = scriptProperties.getProperty(PROP_TASK_COLOR_HEX) || '#FFFF00'; // Default to yellow if not set
+
+  activeRange.setBackground(taskColorHex);
+  if (isColorDark(taskColorHex)) {
+    activeRange.setFontColor('#FFFFFF'); // White font for dark backgrounds
+  } else {
+    activeRange.setFontColor('#000000'); // Black font for light backgrounds
+  }
+  Logger.log(`Assigned 'Any Narrator or Storyteller' to ${activeRange.getA1Notation()} with color ${taskColorHex}`);
+}
 
 // --- Maintenance Wrappers ---
 function showReimportDowntimeDialog_() { showReimportDowntimeDialog(); } // In ReimportDowntime.js

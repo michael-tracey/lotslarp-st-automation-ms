@@ -4,6 +4,62 @@
  * General utility functions for the LARP Downtime Management Script.
  */
 
+/**
+ * Gets the display name of a narrator from their email address.
+ * Caches the email-to-name mapping to reduce sheet lookups.
+ * @param {string} email The email address of the user.
+ * @returns {string|null} The narrator's name or null if not found.
+ */
+function getNarratorNameByEmail_(email) {
+  if (!email) return null;
+
+  const cache = CacheService.getScriptCache();
+  const CACHE_KEY = 'narrator_email_map';
+  let emailMap = cache.get(CACHE_KEY);
+
+  if (emailMap === null) {
+    try {
+      const narratorSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName('narrators');
+      if (!narratorSheet) {
+        Logger.log('getNarratorNameByEmail_: "narrators" sheet not found.');
+        return null; // No sheet, no names
+      }
+      const data = narratorSheet.getDataRange().getValues();
+      const headers = data[0].map(h => String(h).toLowerCase());
+      const nameCol = headers.indexOf('name');
+      const emailCol = headers.indexOf('email');
+
+      if (nameCol === -1 || emailCol === -1) {
+        Logger.log('getNarratorNameByEmail_: Could not find "Name" or "Email" column in "narrators" sheet.');
+        return null;
+      }
+
+      const tempMap = {};
+      for (let i = 1; i < data.length; i++) {
+        const name = data[i][nameCol];
+        const emailAddress = data[i][emailCol];
+        if (name && emailAddress) {
+          tempMap[String(emailAddress).toLowerCase().trim()] = String(name);
+        }
+      }
+      
+      emailMap = tempMap;
+      // Cache the map for 6 hours
+      cache.put(CACHE_KEY, JSON.stringify(emailMap), 21600);
+
+    } catch (e) {
+      Logger.log(`getNarratorNameByEmail_: Error building narrator map: ${e}`);
+      return null; // Return null on error
+    }
+  } else {
+    // If map was in cache, it's a JSON string
+    emailMap = JSON.parse(emailMap);
+  }
+
+  return emailMap[email.toLowerCase().trim()] || null;
+}
+
+
 // --- Audit Log Helper ---
 
 /**
@@ -166,6 +222,27 @@ function getOrCreateDowntimeSheet_(formResponse) {
     Logger.log(`Created and formatted new sheet: '${sheetName}'.`);
   }
   return sheet;
+}
+
+/**
+ * Determines if a given hex color is considered 'dark' for readability purposes.
+ * @param {string} hexColor The hex color string (e.g., '#RRGGBB' or 'RRGGBB').
+ * @returns {boolean} True if the color is dark, false otherwise.
+ */   
+function isColorDark(hexColor) {
+  // Remove '#' if present
+  const hex = hexColor.startsWith('#') ? hexColor.slice(1) : hexColor;
+
+  // Convert hex to RGB
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+          
+  // Calculate luminance (perceived brightness) using the W3C recommended formula
+  const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+      
+  // A common threshold for dark colors is 0.5. Adjust as needed.
+  return luminance < 0.5;
 }
 
 

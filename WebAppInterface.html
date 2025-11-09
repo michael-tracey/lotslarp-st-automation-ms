@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <base target="_top">
+    <title><?= larpName ?></title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&amp;display=swap" rel="stylesheet">
+    <style>
+        /* Basic Layout and Theming */
+        html, body { height: 100%; margin: 0; font-family: 'Roboto', sans-serif; background-color: #1a1a1a; color: #e0e0e0; }
+        .container { display: flex; height: 100%; }
+
+        /* Sidebar */
+        .sidebar {
+            width: 240px;
+            background-color: #2c2c2c;
+            border-right: 1px solid #444;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        .sidebar-header { text-align: center; margin-bottom: 30px; }
+        .sidebar-header h1 { font-family: 'Georgia', serif; color: #b71c1c; margin: 0; font-size: 24px; }
+        .sidebar-nav ul { list-style: none; padding: 0; margin: 0; }
+        .sidebar-nav li a {
+            display: block;
+            padding: 12px 15px;
+            color: #e0e0e0;
+            text-decoration: none;
+            border-radius: 4px;
+            margin-bottom: 5px;
+            transition: background-color 0.3s;
+        }
+        .sidebar-nav li a:hover { background-color: #444; }
+        .sidebar-nav li a.active { background-color: #b71c1c; font-weight: bold; }
+        .sidebar-footer { margin-top: auto; text-align: center; font-size: 12px; color: #888; }
+        .logout-link { color: #b71c1c; text-decoration: none; }
+        .logout-link:hover { text-decoration: underline; }
+
+        /* Main Content */
+        .main-content { flex-grow: 1; padding: 20px; overflow-y: auto; }
+        .page { display: none; }
+        .page.active { display: block; }
+        h3 { color: #e0e0e0; border-bottom: 2px solid #b71c1c; padding-bottom: 10px; }
+
+        /* Info Box */
+        .info { background-color: #2c2c2c; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444; }
+        .info p { margin: 5px 0; }
+
+        /* Progress Bar Styles */
+        .progress-section { margin-top: 15px; }
+        .progress-label { font-weight: 500; margin-bottom: 5px; display: block; }
+        .progress-bar-container { display: flex; background-color: #444; border-radius: 4px; height: 20px; overflow: hidden; box-shadow: inset 0 1px 2px rgba(0,0,0,0.2); }
+        .progress-bar { height: 100%; line-height: 20px; color: white; text-align: center; font-weight: bold; transition: width 0.4s ease, background-color 0.4s ease; font-size: 12px; }
+
+        /* Tab-like buttons for sub-navigation */
+        .sub-nav { overflow: hidden; border-bottom: 1px solid #444; margin-bottom: 20px; }
+        .sub-nav button { background-color: transparent; color: #ccc; float: left; border: none; outline: none; cursor: pointer; padding: 14px 16px; transition: 0.3s; font-size: 16px; border-bottom: 3px solid transparent; }
+        .sub-nav button:hover { color: #fff; }
+        .sub-nav button.active { color: #b71c1c; border-bottom: 3px solid #b71c1c; }
+        .tabcontent { display: none; }
+        .tabcontent.active { display: block; }
+
+        /* Task Item Styles */
+        ul { list-style-type: none; padding: 0; }
+        li { background-color: #2c2c2c; border: 1px solid #444; border-radius: 4px; padding: 15px; margin-bottom: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
+        li.removing { background-color: #5d3a3a; }
+        li strong { color: #b71c1c; }
+
+        /* Modern Textarea and Toolbar */
+        .textarea-container {
+            margin-top: 15px;
+            margin-bottom: 15px;
+            position: relative;
+        }
+        .markdown-toolbar {
+            background-color: #2c2c2c;
+            border: 1px solid #444;
+            border-bottom: none;
+            padding: 8px;
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            display: flex;
+            gap: 5px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        .markdown-toolbar button {
+            background-color: #3a3a3a;
+            color: #e0e0e0;
+            border: 1px solid #555;
+            cursor: pointer;
+            padding: 6px 10px;
+            font-family: 'Roboto', sans-serif;
+            font-weight: 500;
+            font-size: 14px;
+            border-radius: 4px;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .markdown-toolbar button:hover {
+            background-color: #4f4f4f;
+            border-color: #777;
+        }
+        textarea { 
+            width: 100%; 
+            box-sizing: border-box;
+            padding: 15px; 
+            border-radius: 8px; 
+            border-top-left-radius: 0;
+            border-top-right-radius: 0;
+            border: 1px solid #444; 
+            background-color: #222; 
+            color: #e0e0e0; 
+            font-family: 'Roboto', sans-serif;
+            font-size: 15px;
+            line-height: 1.7;
+            resize: vertical;
+            min-height: 150px;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            transition: border-color 0.3s, box-shadow 0.3s;
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #b71c1c;
+            box-shadow: 0 0 8px rgba(183, 28, 28, 0.6), inset 0 1px 3px rgba(0,0,0,0.3);
+        }
+
+        button.submit-btn { background-color: #28a745; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; }
+        button.submit-btn:hover { background-color: #218838; }
+        button:disabled { background-color: #555; color: #aaa; cursor: not-allowed; }
+        .fill-btn-container { margin-top: 8px; display: flex; gap: 8px; }
+        .fill-btn { background-color: #6c757d; font-size: 12px; padding: 5px 10px; color: white; border:none; border-radius: 4px; cursor: pointer; }
+        .fill-btn:hover { background-color: #5a6268; }
+        .assign-container { margin-bottom: 10px; }
+        .completed-response { background-color: #3a4a3a; padding: 8px; border-radius: 4px; margin-top: 10px; border: 1px solid #4a5a4a; }
+        .edit-btn, .save-btn { background-color: #6c757d; font-size: 12px; padding: 5px 10px; color: white; border:none; border-radius: 4px; cursor: pointer; margin-top: 5px; }
+        .edit-btn:hover, .save-btn:hover { background-color: #5a6268; }
+
+        .status-message { margin-top: 10px; padding: 10px; border-radius: 4px; }
+        .success { background-color: #d4edda; color: #155724; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .loading { font-style: italic; color: #aaa; text-align: center; padding: 20px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1><?= larpName ?></h1>
+            </div>
+            <nav class="sidebar-nav">
+                <ul>
+                    <li><a href="#" class="active" onclick="openPage(event, 'DowntimePortal')">Downtime Portal</a></li>
+                    <!-- Future tools will be added here -->
+                </ul>
+            </nav>
+            <div class="sidebar-footer">
+                <p>Logged in as: <strong><?= user.name ?></strong></p>
+                <a href="<?= ScriptApp.getService().getUrl() ?>?action=logout" class="logout-link">Logout</a>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div id="DowntimePortal" class="page active">
+                <h3>Downtime Portal</h3>
+                <div class="info">
+                    <p>Your task color: <strong style="color:<?= user.color ?>;"><?= user.color ?></strong></p>
+                    <p>General task color: <strong id="general-task-color">...</strong></p>
+                    <p>Showing tasks from sheet: <strong id="sheet-name">Loading...</strong></p>
+                    <div class="progress-section">
+                        <span class="progress-label">My Task Completion</span>
+                        <div class="progress-bar-container">
+                            <div id="my-progress-bar" class="progress-bar">0%</div>
+                        </div>
+                    </div>
+                    <div class="progress-section">
+                        <span class="progress-label">General Task Completion</span>
+                        <div class="progress-bar-container">
+                            <div id="general-progress-bar" class="progress-bar">0%</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sub-nav">
+                    <button id="my-pending-tab" class="tablinks active" onclick="openTab(event, 'MyPending')">My Pending</button>
+                    <button id="my-completed-tab" class="tablinks" onclick="openTab(event, 'MyCompleted')">My Completed</button>
+                    <button id="general-pending-tab" class="tablinks" onclick="openTab(event, 'GeneralPending')">General Pending</button>
+                    <button id="general-completed-tab" class="tablinks" onclick="openTab(event, 'GeneralCompleted')">General Completed</button>
+                </div>
+
+                <div id="MyPending" class="tabcontent active"></div>
+                <div id="MyCompleted" class="tabcontent"></div>
+                <div id="GeneralPending" class="tabcontent"></div>
+                <div id="GeneralCompleted" class="tabcontent"></div>
+            </div>
+            <!-- Future pages will be added here -->
+        </div>
+    </div>
+
+    <script>
+        let ALL_TASKS = {};
+        let NARRATOR_COLORS = [];
+        let CURRENT_USER = {};
+
+        // Page navigation
+        function openPage(evt, pageName) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.sidebar-nav a').forEach(a => a.classList.remove('active'));
+            document.getElementById(pageName).classList.add('active');
+            evt.currentTarget.classList.add('active');
+        }
+
+        // Sub-navigation (tabs)
+        function openTab(evt, tabName) {
+            document.querySelectorAll('.tabcontent').forEach(tc => tc.classList.remove('active'));
+            document.querySelectorAll('.sub-nav button').forEach(tl => tl.classList.remove("active"));
+            document.getElementById(tabName).classList.add('active');
+            evt.currentTarget.classList.add("active");
+        }
+
+                window.onload = function() {
+
+                    document.querySelectorAll('.tabcontent').forEach(tc => tc.innerHTML = '<p class="loading">Loading...</p>');
+
+        
+
+                    const narratorColorsPromise = new Promise((resolve, reject) => {
+
+                        google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).getNarratorColors();
+
+                    });
+
+        
+
+                    const downtimeTasksPromise = new Promise((resolve, reject) => {
+
+                        google.script.run.withSuccessHandler(resolve).withFailureHandler(reject).getDowntimeTasks();
+
+                    });
+
+        
+
+                    Promise.all([narratorColorsPromise, downtimeTasksPromise])
+
+                        .then(([colors, data]) => {
+
+                            NARRATOR_COLORS = colors;
+
+                            displayPage(data);
+
+                        })
+
+                        .catch(err => {
+
+                            handleError(err);
+
+                        });
+
+                };
+
+        function displayPage(data) {
+            CURRENT_USER = data.user;
+            document.getElementById('sheet-name').textContent = data.sheetName || 'N/A';
+            const generalColorEl = document.getElementById('general-task-color');
+            generalColorEl.textContent = data.generalHexColor || 'Not Set';
+            generalColorEl.style.color = data.generalHexColor || '#ccc';
+
+                updateCompletionRate('my-progress-bar', data.myCompletionRate);
+            
+                const generalRate = data.generalTotalTasks > 0 ? Math.round((data.generalCompleted.length / data.generalTotalTasks) * 100) : 0;
+                updateCompletionRate('general-progress-bar', generalRate);
+            [...data.myPending, ...data.myCompleted, ...data.generalPending, ...data.generalCompleted].forEach(task => {
+                ALL_TASKS[task.taskID] = task;
+            });
+
+            displayTasks(data.myPending, 'MyPending', false);
+            displayTasks(data.myCompleted, 'MyCompleted', true);
+            displayTasks(data.generalPending, 'GeneralPending', false);
+            displayTasks(data.generalCompleted, 'GeneralCompleted', true);
+        }
+
+        function displayTasks(tasks, containerId, isCompleted) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            if (!tasks || tasks.length === 0) {
+                container.innerHTML = '<p>No tasks found.</p>';
+                return;
+            }
+            const ul = document.createElement('ul');
+            tasks.forEach(task => ul.appendChild(createTaskElement(task, isCompleted, containerId)));
+            container.appendChild(ul);
+        }
+
+        function createTaskElement(task, isCompleted, containerId) {
+            const li = document.createElement('li');
+            li.id = task.taskID;
+            let assignDropdown = '';
+            if (containerId === 'GeneralPending') {
+                assignDropdown = '<div class="assign-container">' +
+                                 '<select onchange="assignTask(this.value, \'' + task.taskID + '\')">' +
+                                 '<option value="">Assign to...</option>';
+                NARRATOR_COLORS.forEach(narrator => {
+                    assignDropdown += `<option value="${narrator.color}">${narrator.name}</option>`;
+                });
+                assignDropdown += '</select></div>';
+            }
+
+            let innerHTML = '<div><strong>Character:</strong> ' + (task.characterName || 'N/A') + '</div>' +
+                            '<div><strong>Summary:</strong> ' + (task.summary || 'No summary.') + '</div>';
+            if (isCompleted) {
+                innerHTML += '<div class="completed-response"><strong>Response:</strong> <span id="response-text-' + task.taskID + '">' + (task.response || '') + '</span></div>';
+                if(task.completedBy) innerHTML += '<div><small>Completed by: ' + task.completedBy + '</small></div>';
+                innerHTML += '<button id="edit-btn-' + task.taskID + '" class="edit-btn" data-taskid="' + task.taskID + '">Edit</button>';
+                innerHTML += '<button id="save-btn-' + task.taskID + '" class="save-btn" data-taskid="' + task.taskID + '" style="display:none;">Save</button>';
+            } else {
+                innerHTML += assignDropdown; // Add the dropdown here
+                innerHTML += '<div class="textarea-container">' +
+                             '<textarea id="response-' + task.taskID + '" rows="8" placeholder="Enter your response..."></textarea>' +
+                             '</div>';
+
+                innerHTML += '<div class="fill-btn-container">' +
+                                '<button class="fill-btn" data-type="feed" data-taskid="' + task.taskID + '">Feed</button>' +
+                                '<button class="fill-btn" data-type="herd" data-taskid="' + task.taskID + '">Herd</button>' +
+                                '<button class="fill-btn" data-type="patrol" data-taskid="' + task.taskID + '">Patrol</button>';
+                if (CURRENT_USER.role === 'Storyteller') {
+                    innerHTML += '<button class="fill-btn" data-type="discipline" data-taskid="' + task.taskID + '">Discipline</button>';
+                }
+                innerHTML += '</div>' +
+                             '<button id="button-' + task.taskID + '" class="submit-btn" data-taskid="' + task.taskID + '">Submit Response</button>' +
+                             '<div id="status-' + task.taskID + '" class="status-message"></div>';
+            }
+            li.innerHTML = innerHTML;
+            return li;
+        }
+
+        function formatText(textareaId, format) {
+            const textarea = document.getElementById(textareaId);
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const selectedText = textarea.value.substring(start, end);
+            let formattedText;
+
+            switch (format) {
+                case 'bold':
+                    formattedText = '**' + selectedText + '**';
+                    break;
+                case 'italic':
+                    formattedText = '*' + selectedText + '*';
+                    break;
+                case 'underline':
+                    formattedText = '__' + selectedText + '__';
+                    break;
+                case 'strikethrough':
+                    formattedText = '~~' + selectedText + '~~';
+                    break;
+                case 'spoiler':
+                    formattedText = '||' + selectedText + '||';
+                    break;
+                case 'quote':
+                    formattedText = '> ' + selectedText.replace(/\n/g, '\n> ');
+                    break;
+                case 'code':
+                    formattedText = '```\n' + selectedText + '\n```';
+                    break;
+                default:
+                    return;
+            }
+
+            textarea.value = textarea.value.substring(0, start) + formattedText + textarea.value.substring(end);
+            textarea.focus();
+            textarea.selectionEnd = start + formattedText.length;
+        }
+
+        function updateCompletionRate(elementId, rate) {
+            const progressBar = document.getElementById(elementId);
+            if (progressBar) {
+                progressBar.style.width = `${rate}%`;
+                progressBar.textContent = `${rate}%`;
+                let color;
+                if (rate <= 25) {
+                    color = '#b71c1c'; // Red
+                } else if (rate <= 50) {
+                    color = '#f0ad4e'; // Orange-Yellow
+                } else if (rate <= 90) {
+                    color = '#5cb85c'; // Light Green
+                } else {
+                    color = '#28a745'; // Green
+                }
+                progressBar.style.backgroundColor = color;
+            }
+        }
+
+        document.addEventListener('click', function(event) {
+            if (event.target && event.target.classList.contains('submit-btn')) {
+                submitResponse(event.target.dataset.taskid);
+            }
+            if (event.target && event.target.classList.contains('fill-btn')) {
+                handleFillButtonClick(event.target.dataset.taskid, event.target.dataset.type, event.target);
+            }
+            if (event.target && event.target.classList.contains('edit-btn')) {
+                handleEditClick(event.target.dataset.taskid);
+            }
+            if (event.target && event.target.classList.contains('save-btn')) {
+                handleSaveClick(event.target.dataset.taskid);
+            }
+        });
+
+        function handleFillButtonClick(taskID, type, button) {
+            const originalButtonText = button.textContent;
+            button.textContent = '...';
+            button.disabled = true;
+            google.script.run
+                .withSuccessHandler(text => {
+                    const textarea = document.getElementById(`response-${taskID}`);
+                    textarea.value += (textarea.value ? '\n' : '') + text;
+                    button.textContent = originalButtonText;
+                    button.disabled = false;
+                })
+                .withFailureHandler(err => {
+                    console.error('Error getting fill data:', err);
+                    alert(`Error: ${err.message}`);
+                    button.textContent = originalButtonText;
+                    button.disabled = false;
+                })
+                .getFillData(type);
+        }
+
+        function assignTask(color, taskID) {
+            if (!color) return; // Do nothing if the "Assign to..." option is selected
+
+            const statusDiv = document.getElementById(`status-${taskID}`);
+            statusDiv.innerHTML = 'Assigning...';
+            statusDiv.className = 'status-message loading';
+
+            google.script.run
+                .withSuccessHandler(result => {
+                    if (result.status === 'success') {
+                        statusDiv.innerHTML = 'Assigned!';
+                        statusDiv.className = 'status-message success';
+                        // Optional: Move the task from General Pending to another list
+                        setTimeout(() => {
+                            const taskElement = document.getElementById(taskID);
+                            if (taskElement) {
+                                taskElement.style.transition = 'opacity 0.5s ease';
+                                taskElement.style.opacity = '0';
+                                setTimeout(() => taskElement.remove(), 500);
+                            }
+                        }, 1000);
+                    } else {
+                        statusDiv.innerHTML = `Error: ${result.message}`;
+                        statusDiv.className = 'status-message error';
+                    }
+                })
+                .withFailureHandler(error => {
+                    console.error('Error assigning task:', error);
+                    statusDiv.innerHTML = `Error: ${error.message}`;
+                    statusDiv.className = 'status-message error';
+                })
+                .assignTaskColor(taskID, color);
+        }
+
+        function handleEditClick(taskID) {
+            const responseSpan = document.getElementById(`response-text-${taskID}`);
+            const responseText = responseSpan.innerText;
+
+            const textarea = document.createElement('textarea');
+            textarea.id = `response-edit-${taskID}`;
+            textarea.rows = 6;
+            textarea.value = responseText;
+
+            responseSpan.replaceWith(textarea);
+
+            document.getElementById(`edit-btn-${taskID}`).style.display = 'none';
+            document.getElementById(`save-btn-${taskID}`).style.display = 'inline-block';
+        }
+
+        function handleSaveClick(taskID) {
+            const textarea = document.getElementById(`response-edit-${taskID}`);
+            const responseText = textarea.value;
+
+            const statusDiv = document.getElementById(`status-${taskID}`) || document.createElement('div');
+            if (!statusDiv.id) {
+                statusDiv.id = `status-${taskID}`;
+                statusDiv.className = 'status-message';
+                textarea.parentNode.insertBefore(statusDiv, textarea.nextSibling);
+            }
+            
+            statusDiv.innerHTML = 'Saving...';
+            statusDiv.className = 'status-message loading';
+
+            google.script.run
+                .withSuccessHandler(result => {
+                    if (result.status === 'success') {
+                        statusDiv.innerHTML = 'Saved!';
+                        statusDiv.className = 'status-message success';
+
+                        const span = document.createElement('span');
+                        span.id = `response-text-${taskID}`;
+                        span.innerText = responseText;
+                        textarea.replaceWith(span);
+
+                        document.getElementById(`edit-btn-${taskID}`).style.display = 'inline-block';
+                        document.getElementById(`save-btn-${taskID}`).style.display = 'none';
+                        
+                        // Update the note in the UI
+                        const taskData = ALL_TASKS[taskID];
+                        taskData.completedBy = CURRENT_USER.name; // Update the completedBy field
+                        const completedByDiv = document.querySelector(`#${taskID} > div > small`);
+                        if (completedByDiv) {
+                            completedByDiv.textContent = 'Completed by: ' + CURRENT_USER.name;
+                        }
+
+                    } else {
+                        statusDiv.innerHTML = `Error: ${result.message}`;
+                        statusDiv.className = 'status-message error';
+                    }
+                })
+                .withFailureHandler(error => {
+                    statusDiv.innerHTML = `Error: ${error.message}`;
+                    statusDiv.className = 'status-message error';
+                })
+                .submitDowntimeResponse(taskID, responseText);
+        }
+
+        function submitResponse(taskID) {
+            const responseText = document.getElementById(`response-${taskID}`).value;
+            if (!responseText.trim()) { alert('Response cannot be empty.'); return; }
+            const statusDiv = document.getElementById(`status-${taskID}`);
+            const button = document.getElementById(`button-${taskID}`);
+            statusDiv.innerHTML = 'Submitting...';
+            statusDiv.className = 'status-message loading';
+            button.disabled = true;
+            google.script.run
+                .withSuccessHandler(result => handleSuccess(result, taskID, responseText))
+                .withFailureHandler(error => handleError(error, taskID))
+                .submitDowntimeResponse(taskID, responseText);
+        }
+
+        function handleSuccess(result, taskID, responseText) {
+            const statusDiv = document.getElementById(`status-${taskID}`);
+            if (result.status === 'success') {
+                statusDiv.innerHTML = result.message;
+                statusDiv.className = 'status-message success';
+                document.getElementById(`response-${taskID}`).disabled = true;
+                setTimeout(() => moveTaskToCompleted(taskID, responseText), 1000);
+            } else {
+                statusDiv.innerHTML = `Error: ${result.message}`;
+                statusDiv.className = 'status-message error';
+                document.getElementById(`button-${taskID}`).disabled = false;
+            }
+        }
+
+        function moveTaskToCompleted(taskID, responseText) {
+            const taskElement = document.getElementById(taskID);
+            if (!taskElement) return;
+
+            const parentListId = taskElement.closest('.tabcontent').id;
+            let completedListId, rateType;
+            
+            if (parentListId === 'MyPending') {
+                completedListId = 'MyCompleted';
+                rateType = 'my';
+            } else if (parentListId === 'GeneralPending') {
+                completedListId = 'GeneralCompleted';
+                rateType = 'general';
+            } else { return; }
+
+            taskElement.classList.add('removing');
+            setTimeout(() => {
+                const taskData = ALL_TASKS[taskID];
+                taskData.response = responseText;
+                taskData.completedBy = CURRENT_USER.name;
+                taskElement.remove();
+
+                const completedContainer = document.getElementById(completedListId);
+                const completedList = completedContainer.querySelector('ul') || document.createElement('ul');
+                if (!completedContainer.querySelector('ul')) completedContainer.appendChild(completedList);
+                if (completedList.querySelector('p')) completedList.innerHTML = '';
+                
+                // Pass the correct isCompleted flag
+                const newTaskElement = createTaskElement(taskData, true, completedListId);
+                completedList.prepend(newTaskElement);
+
+                // Recalculate and update rates
+                if (rateType === 'my') {
+                    const pendingCount = document.getElementById(parentListId).querySelectorAll('li').length;
+                    const completedCount = completedList.querySelectorAll('li').length;
+                    const total = pendingCount + completedCount;
+                    const newRate = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+                    updateCompletionRate('my-progress-bar', newRate);
+                } else if (rateType === 'general') {
+                    // Refetch to get accurate breakdown for general tasks
+                    google.script.run.withSuccessHandler(displayPage).getDowntimeTasks();
+                }
+            }, 500);
+        }
+
+        function handleError(error, taskID) {
+            console.error('An error occurred:', error);
+            if (taskID) {
+                const statusDiv = document.getElementById(`status-${taskID}`);
+                const button = document.getElementById(`button-${taskID}`);
+                statusDiv.innerHTML = `Error: ${error.message}`;
+                statusDiv.className = 'status-message error';
+                if(button) button.disabled = false;
+            } else {
+                document.querySelectorAll('.main-content').forEach(mc => {
+                    mc.innerHTML = `<p class="error">An error occurred: ${error.message}</p><p><a href="<?= ScriptApp.getService().getUrl() ?>?action=logout">Logout and try again</a></p>`;
+                });
+            }
+        }
+    </script>
+</body>
+</html>
