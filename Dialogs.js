@@ -50,6 +50,76 @@ function showDowntimeProgressDialog() {
   }
 }
 
+
+/** Displays the downtime progress summary dialog by staff. */
+function showDowntimeProgressByStaffDialog() {
+    Logger.log('Showing Downtime Progress by Staff Dialog...');
+    try {
+        const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+        const rawData = getDowntimeProgressByNarrator_(sheet); // In SheetData.js
+        if (!rawData) {
+            SpreadsheetApp.getUi().alert('Could not retrieve downtime data by staff. Is this the correct sheet?');
+            Logger.log('Failed to get downtime progress by staff data.');
+            return;
+        }
+
+        let totalDowntimes = 0;
+        let totalCompleted = 0;
+        let totalAssigned = 0;
+        
+        const unassignedStats = rawData.find(d => d.name === 'Unassigned');
+        const anyStaffStats = rawData.find(d => d.name === 'Any Staff');
+        const staffStats = rawData.filter(d => d.name !== 'Unassigned' && d.name !== 'Any Staff');
+
+        staffStats.forEach(staffMember => {
+            totalDowntimes += staffMember.total;
+            totalCompleted += staffMember.completed;
+            totalAssigned += staffMember.total;
+        });
+
+        if (unassignedStats) {
+            totalDowntimes += unassignedStats.total;
+            totalCompleted += unassignedStats.completed;
+            unassignedStats.completion = unassignedStats.total > 0 ? (unassignedStats.completed / unassignedStats.total) * 100 : 0;
+            unassignedStats.percentageOfAll = totalDowntimes > 0 ? (unassignedStats.total / totalDowntimes) * 100 : 0;
+        }
+
+        if (anyStaffStats) {
+            totalDowntimes += anyStaffStats.total;
+            totalCompleted += anyStaffStats.completed;
+            anyStaffStats.completion = anyStaffStats.total > 0 ? (anyStaffStats.completed / anyStaffStats.total) * 100 : 0;
+            anyStaffStats.percentageOfAll = totalDowntimes > 0 ? (anyStaffStats.total / totalDowntimes) * 100 : 0;
+        }
+
+        staffStats.forEach(staffMember => {
+            staffMember.completion = staffMember.total > 0 ? (staffMember.completed / staffMember.total) * 100 : 0;
+            staffMember.percentageOfAssigned = totalAssigned > 0 ? (staffMember.total / totalAssigned) * 100 : 0;
+            staffMember.percentageOfAll = totalDowntimes > 0 ? (staffMember.total / totalDowntimes) * 100 : 0;
+        });
+
+        const overallCompletion = totalDowntimes > 0 ? (totalCompleted / totalDowntimes) * 100 : 0;
+
+        const template = HtmlService.createTemplateFromFile('DowntimeProgressByStaffDialog');
+        template.staffStats = staffStats.sort((a, b) => a.name.localeCompare(b.name));
+        template.unassignedStats = unassignedStats || { name: 'Unassigned', color: '#FFFFFF', total: 0, completed: 0, completion: 0 };
+        template.anyStaffStats = anyStaffStats;
+        template.totalDowntimes = totalDowntimes;
+        template.totalCompleted = totalCompleted;
+        template.totalAssigned = totalAssigned;
+        template.overallCompletion = overallCompletion;
+
+        const htmlOutput = template.evaluate()
+            .setWidth(900)
+            .setHeight(600);
+
+        SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Downtime Summary by Staff');
+        Logger.log('Downtime Progress by Staff Dialog displayed.');
+    } catch (error) {
+        Logger.log(`Error showing downtime progress by staff dialog: ${error}\nStack: ${error.stack}`);
+        SpreadsheetApp.getUi().alert(`Error showing dialog: ${error.message}`);
+    }
+}
+
 /** Displays the influences progress summary dialog. */
 function showInfluencesProgressDialog() {
     Logger.log('Showing Influences Progress Dialog...');
@@ -238,8 +308,9 @@ function jumpToCell(cellAddress) {
  * Displays a generic dialog for showing missing items (Downtimes, Influences, Resources).
  * @param {string} itemType Title for the dialog (e.g., "Downtime", "Influence").
  * @param {function} getDataFunction Function to call to get the array of missing items (e.g., getMissingDowntimeData_).
+ * @param {object} [colorMap={}] Optional: A map of colors to staff names for display.
  */
-function showMissingItemsDialog_(itemType, getDataFunction) {
+function showMissingItemsDialog_(itemType, getDataFunction, colorMap = {}) {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
     const missingItems = getDataFunction(sheet); // Assumes getDataFunction is in SheetData.gs
 
@@ -259,6 +330,7 @@ function showMissingItemsDialog_(itemType, getDataFunction) {
         const template = HtmlService.createTemplateFromFile('MissingItemsDialog');
         template.itemType = itemType;
         template.missingItems = missingItems;
+        template.colorMap = colorMap;
 
         const htmlOutput = template.evaluate()
             .setWidth(800)
@@ -276,7 +348,34 @@ function showMissingItemsDialog_(itemType, getDataFunction) {
 // Wrapper function for the menu item, ensuring it calls the correct internal function
 function showMissingDowntimeDialog() {
     Logger.log('Menu item "Show Missing Downtime Responses" clicked.');
-    showMissingItemsDialog_('Downtime', getMissingDowntimeData_); // In SheetData.gs
+    const narrators = getNarrators_();
+    const colorMap = narrators.reduce((acc, n) => {
+        acc[n.color.toLowerCase()] = n.name;
+        return acc;
+    }, {});
+    const scriptProperties = PropertiesService.getScriptProperties();
+    const anyStaffColor = scriptProperties.getProperty(PROP_TASK_COLOR_HEX) || '#FFFF00';
+    colorMap[anyStaffColor.toLowerCase()] = 'Any Staff';
+
+    showMissingItemsDialog_('Downtime', getMissingDowntimeData_, colorMap); // In SheetData.gs
+}
+
+/**
+ * Shows the missing downtimes dialog for a specific color.
+ * @param {string} color The hex color to find missing downtimes for.
+ */
+function showMissingDowntimesByColorDialog(color) {
+    Logger.log(`Showing missing downtimes for color: ${color}`);
+    const narrators = getNarrators_();
+    const colorMap = narrators.reduce((acc, n) => {
+        acc[n.color.toLowerCase()] = n.name;
+        return acc;
+    }, {});
+    const scriptProperties = PropertiesService.getScriptProperties();
+    const anyStaffColor = scriptProperties.getProperty(PROP_TASK_COLOR_HEX) || '#FFFF00';
+    colorMap[anyStaffColor.toLowerCase()] = 'Any Staff';
+
+    showMissingItemsDialog_('Downtime', () => getMissingResponsesByColor(color), colorMap);
 }
 
 /**
@@ -292,8 +391,20 @@ function showFindPendingByColorDialog() {
             return;
         }
 
+        const narrators = getNarrators_();
+        const colorMap = narrators.reduce((acc, n) => {
+            acc[n.color.toLowerCase()] = n.name;
+            return acc;
+        }, {});
+
+        // Add 'Any Staff' to the colorMap
+        const scriptProperties = PropertiesService.getScriptProperties();
+        const anyStaffColor = scriptProperties.getProperty(PROP_TASK_COLOR_HEX) || '#FFFF00';
+        colorMap[anyStaffColor.toLowerCase()] = 'Any Staff';
+
         const template = HtmlService.createTemplateFromFile('FindPendingByColorDialog');
         template.colors = uniqueColors; // Pass the array of color strings
+        template.colorMap = colorMap;
 
         const htmlOutput = template.evaluate()
             .setWidth(850)

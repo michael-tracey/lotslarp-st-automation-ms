@@ -2,7 +2,7 @@
 <html>
 <head>
     <base target="_top">
-    <title>Downtime Summary by Staff</title>
+    <title>Downtime Progress by Staff</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
@@ -51,8 +51,16 @@
         td {
             color: #212529;
         }
-        .narrator-name {
+        .staff-name {
              font-weight: 500;
+        }
+        .staff-link {
+            color: #007bff;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .staff-link:hover {
+            text-decoration: underline;
         }
         .color-swatch {
             display: inline-block;
@@ -151,28 +159,46 @@
                 </tr>
             </thead>
             <tbody>
-                <? narratorStats.forEach(narrator => { ?>
+                <? if (anyStaffStats && anyStaffStats.total > 0) { ?>
+                    <tr>
+                        <td class="staff-name">
+                            <span class="color-swatch" style="background-color: <?= anyStaffStats.color ?>;"></span>
+                            <a href="#" class="staff-link" onclick="showMissingForColor('<?= anyStaffStats.color ?>')"><?= anyStaffStats.name ?></a>
+                        </td>
+                        <td>
+                            <div class="progress-bar-container" title="<?= anyStaffStats.completion.toFixed(1) ?>%">
+                                <div class="progress-bar"
+                                        data-percentage="<?= anyStaffStats.completion ?>"
+                                        style="width: <?= anyStaffStats.completion ?>%;"></div>
+                            </div>
+                        </td>
+                        <td><?= anyStaffStats.completed ?>/<?= anyStaffStats.total ?></td>
+                        <td>N/A</td>
+                        <td><?= anyStaffStats.percentageOfAll.toFixed(1) ?>%</td>
+                    </tr>
+                <? } ?>
+                <? staffStats.forEach(staffMember => { ?>
                         <tr>
-                            <td class="narrator-name">
-                                <span class="color-swatch" style="background-color: <?= narrator.color ?>;"></span>
-                                <?= narrator.name ?>
+                            <td class="staff-name">
+                                <span class="color-swatch" style="background-color: <?= staffMember.color ?>;"></span>
+                                <a href="#" class="staff-link" onclick="showMissingForColor('<?= staffMember.color ?>')"><?= staffMember.name ?></a>
                             </td>
                             <td>
-                                <div class="progress-bar-container" title="<?= narrator.completion.toFixed(1) ?>%">
+                                <div class="progress-bar-container" title="<?= staffMember.completion.toFixed(1) ?>%">
                                     <div class="progress-bar"
-                                         data-percentage="<?= narrator.completion ?>"
-                                         style="width: <?= narrator.completion ?>%;"></div>
+                                         data-percentage="<?= staffMember.completion ?>"
+                                         style="width: <?= staffMember.completion ?>%;"></div>
                                 </div>
                             </td>
-                            <td><?= narrator.completed ?>/<?= narrator.total ?></td>
-                            <td><?= narrator.percentageOfAssigned.toFixed(1) ?>%</td>
-                            <td><?= narrator.percentageOfAll.toFixed(1) ?>%</td>
+                            <td><?= staffMember.completed ?>/<?= staffMember.total ?></td>
+                            <td><?= staffMember.percentageOfAssigned.toFixed(1) ?>%</td>
+                            <td><?= staffMember.percentageOfAll.toFixed(1) ?>%</td>
                         </tr>
                 <? }) ?>
 
                 <? if (unassignedStats.total > 0) { ?>
                      <tr>
-                        <td class="narrator-name">
+                        <td class="staff-name">
                              <span class="color-swatch" style="background-color: #FFFFFF;"></span>
                             Unassigned
                         </td>
@@ -185,6 +211,7 @@
                         </td>
                         <td><?= unassignedStats.completed ?>/<?= unassignedStats.total ?></td>
                         <td>N/A</td>
+                        <td><?= unassignedStats.percentageOfAll.toFixed(1) ?>%</td>
                     </tr>
                 <? } ?>
             </tbody>
@@ -218,6 +245,10 @@
                  }
              });
          }
+
+        function showMissingForColor(color) {
+            google.script.run.showMissingDowntimesByColorDialog(color);
+        }
 
          window.onload = function() {
              setProgressBarClasses();

@@ -117,6 +117,7 @@
                     <tr>
                         <th>Character</th>
                         <th>Header</th>
+                        <th>Assigned Staff</th>
                         <th>Submitted Text</th>
                         <th>Cell to Edit</th>
                     </tr>
@@ -127,6 +128,14 @@
                             <td class="character-name"><?= entry.characterName ?></td>
                             <td><?= entry.header ?></td>
                             <td class="downtime-text" style="background-color: <?= entry.backgroundColor ?>;">
+                                <? if (entry.backgroundColor.toLowerCase() === '#ffffff') { ?>
+                                    Unassigned
+                                <? } else { ?>
+                                    <? const name = colorMap[entry.backgroundColor.toLowerCase()]; ?>
+                                    <?= name ? `${name} (${entry.backgroundColor})` : `unknown (${entry.backgroundColor})` ?>
+                                <? } ?>
+                            </td>
+                            <td class="downtime-text">
                                 <div id="collapsible-<?= index ?>" class="collapsible-text">
                                     <?= entry.text ?>
                                     <span class="toggle-link" onclick="toggleText_(event, 'collapsible-<?= index ?>')">more...</span>

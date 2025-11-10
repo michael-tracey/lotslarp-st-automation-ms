@@ -56,7 +56,7 @@ function onOpen() {
           SpreadsheetApp.getUi().alert('Please configure the Test Discord Webhook URL in Project Settings > Script properties if you plan to use test mode.');
       }
        if (!scriptProperties.getProperty(PROP_TASK_COLOR_HEX) || scriptProperties.getProperty(PROP_TASK_COLOR_HEX).includes('#')) {
-          SpreadsheetApp.getUi().alert('Please configure the TASK_COLOR_HEX in Project Settings > Script properties if you want to change the default color for "Any Narrator or Storyteller".');
+          SpreadsheetApp.getUi().alert('Please configure the TASK_COLOR_HEX in Project Settings > Script properties if you want to change the default color for "Any Staff".');
       }
   }
 
@@ -67,6 +67,7 @@ function onOpen() {
 
   menu.addItem('Downtime Editor popup', 'openEditCellDialog'); // In Dialogs.gs
   menu.addItem('Show Downtime Progress', 'showDowntimeProgressDialog'); // In Dialogs.gs
+  menu.addItem('Show Downtimes Progress by Staff', 'showDowntimeProgressByStaffDialog'); // In Dialogs.gs
   menu.addSeparator();
 
   // --- Dynamic Narrator Assignment Menu ---
@@ -76,8 +77,8 @@ function onOpen() {
     const MAX_NARRATORS_IN_MENU = 50;
     const taskColorHex = scriptProperties.getProperty(PROP_TASK_COLOR_HEX) || '#FFFF00'; // Default to yellow if not set
 
-    // Add 'Any Narrator or Storyteller' option
-    assignToMenu.addItem(`Any Narrator or Storyteller [${taskColorHex}]`, 'assignAnyNarratorOrStoryteller_');
+    // Add 'Any Staff' option
+    assignToMenu.addItem(`Any Staff [${taskColorHex}]`, 'assignAnyStaff_');
 
     // Sort narrators alphabetically
     narrators.sort((a, b) => a.name.localeCompare(b.name));
@@ -386,9 +387,9 @@ function fillCellWithEliteInfluenceData_() { fillCellWithInfluenceData_(ELITE_IN
 function fillCellWithUnderworldInfluenceData_() { fillCellWithInfluenceData_(UW_INFLUENCES_SHEET_NAME, 'Underworld'); } // In Actions.gs
 
 /**
- * Assigns 'Any Narrator or Storyteller' to the active cell and sets its background color.
+ * Assigns 'Any Staff' to the active cell and sets its background color.
  */
-function assignAnyNarratorOrStoryteller_() {
+function assignAnyStaff_() {
   const ui = SpreadsheetApp.getUi();
   const activeRange = SpreadsheetApp.getActiveRange();
   if (!activeRange) {
@@ -405,7 +406,7 @@ function assignAnyNarratorOrStoryteller_() {
   } else {
     activeRange.setFontColor('#000000'); // Black font for light backgrounds
   }
-  Logger.log(`Assigned 'Any Narrator or Storyteller' to ${activeRange.getA1Notation()} with color ${taskColorHex}`);
+  Logger.log(`Assigned 'Any Staff' to ${activeRange.getA1Notation()} with color ${taskColorHex}`);
 }
 
 // --- Maintenance Wrappers ---

@@ -655,7 +655,8 @@ function getMissingResponsesByColor(hexColor) {
                             characterName: characterName,
                             header: header,
                             text: submissionValue.length > 150 ? submissionValue.substring(0, 147) + '...' : submissionValue,
-                            cell: responseCellA1
+                            cell: responseCellA1,
+                            backgroundColor: cellBg
                         });
                     }
                 }
@@ -668,6 +669,86 @@ function getMissingResponsesByColor(hexColor) {
         Logger.log(`Error getting missing responses by color: ${error}\nStack: ${error.stack}`);
         // Re-throw to send a meaningful error to the client
         throw new Error(`Failed to retrieve data from the sheet: ${error.message}`);
+    }
+}
+
+/**
+ * Fetches narrator data from the 'Narrators' sheet.
+ * Assumes 'Name' is in the first column and 'Color' (hex code) is in the second.
+ * @returns {Array<{name: string, color: string}>|null} Array of narrator objects with name and color, or null if the sheet isn't found.
+ */
+function getDowntimeProgressByNarrator_(sheet) {
+    if (!sheet) {
+        Logger.log('getDowntimeProgressByNarrator_ called with invalid sheet object.');
+        return null;
+    }
+    Logger.log(`Calculating downtime progress by narrator for sheet: ${sheet.getName()}`);
+
+    try {
+        const narrators = getNarrators_();
+        if (!narrators) {
+            throw new Error("Could not retrieve narrator data.");
+        }
+
+        const scriptProperties = PropertiesService.getScriptProperties();
+        const taskColorHex = scriptProperties.getProperty(PROP_TASK_COLOR_HEX) || '#FFFF00';
+
+        const narratorColorMap = narrators.reduce((acc, narrator) => {
+            acc[narrator.color.toLowerCase()] = narrator.name;
+            return acc;
+        }, {});
+
+        const stats = {}; // Keyed by color
+        narrators.forEach(n => {
+            stats[n.color.toLowerCase()] = { name: n.name, color: n.color, total: 0, completed: 0 };
+        });
+        stats[taskColorHex.toLowerCase()] = { name: 'Any Staff', color: taskColorHex, total: 0, completed: 0 };
+        stats['unassigned'] = { name: 'Unassigned', color: '#FFFFFF', total: 0, completed: 0 };
+
+
+        const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+        const dataRange = sheet.getDataRange();
+        const values = dataRange.getValues();
+        const backgrounds = dataRange.getBackgrounds();
+
+        for (let i = 1; i < values.length; i += 2) {
+            if (i + 1 >= values.length) continue;
+
+            const submissionRow = values[i];
+            const responseRow = values[i + 1];
+            const submissionBgs = backgrounds[i];
+
+            if (submissionRow[TIMESTAMP_COL - 1]) { // Is a valid submission
+                headers.forEach((header, index) => {
+                    if (DOWNTIME_HEADER_REGEX.test(header)) {
+                        const submissionValue = String(submissionRow[index] || '').trim();
+                        if (submissionValue) {
+                            const color = submissionBgs[index].toLowerCase();
+                            const responseValue = String(responseRow[index] || '').trim();
+                            const isCompleted = responseValue !== '';
+
+                            let category = stats[color];
+                            if (!category) {
+                                // If color not in narrator list, treat as unassigned for this purpose
+                                category = stats['unassigned'];
+                            }
+
+                            category.total++;
+                            if (isCompleted) {
+                                category.completed++;
+                            }
+                        }
+                    }
+                });
+            }
+        }
+        
+        return Object.values(stats);
+
+    } catch (error) {
+        Logger.log(`Error in getDowntimeProgressByNarrator_: ${error}\nStack: ${error.stack}`);
+        SpreadsheetApp.getUi().alert(`Error calculating narrator progress: ${error.message}`);
+        return null;
     }
 }
 

@@ -122,7 +122,8 @@
                         <? colors.forEach(color => { ?>
                             <li data-value="<?= color ?>">
                                 <span class="color-swatch" style="background-color: <?= color ?>;"></span>
-                                <?= color ?>
+                                <? const name = colorMap[color.toLowerCase()]; ?>
+                                <?= name ? `${name} (${color})` : `unknown (${color})` ?>
                             </li>
                         <? }); ?>
                     <? } ?>
@@ -147,6 +148,7 @@
         const findButton = document.getElementById('find-button');
         const resultsArea = document.getElementById('results-area');
         const spinner = document.getElementById('spinner');
+        const colorMap = <?= JSON.stringify(colorMap || {}) ?>;
 
         selectedOption.addEventListener('click', () => {
             optionsList.classList.toggle('active');
@@ -156,8 +158,10 @@
             option.addEventListener('click', () => {
                 const value = option.getAttribute('data-value');
                 const swatchColor = option.querySelector('.color-swatch').style.backgroundColor;
+                const name = colorMap[value.toLowerCase()];
+                const text = name ? `${name} (${value})` : `unknown (${value})`;
 
-                selectedOption.querySelector('span:last-child').textContent = value;
+                selectedOption.querySelector('span:last-child').textContent = text;
                 selectedOption.querySelector('.color-swatch').style.backgroundColor = swatchColor;
                 hiddenInput.value = value;
 
