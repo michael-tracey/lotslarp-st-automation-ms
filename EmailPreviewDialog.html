@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+      }
+      .container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        padding: 10px;
+        box-sizing: border-box;
+        gap: 6px;
+      }
+      .field label {
+        font-size: 12px;
+        font-weight: bold;
+        display: block;
+        margin-bottom: 2px;
+      }
+      .field input {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 4px 6px;
+        border: 1px solid #ccc;
+        border-radius: 2px;
+        font-size: 13px;
+      }
+      .field input:focus {
+        border-color: #1a73e8;
+        outline: none;
+      }
+      .body-label {
+        font-size: 12px;
+        font-weight: bold;
+        margin-bottom: 2px;
+        color: #555;
+      }
+      .email-body {
+        flex: 1;
+        border: 1px solid #ccc;
+        border-radius: 2px;
+        padding: 10px 12px;
+        overflow-y: auto;
+        outline: none;
+        font-family: Arial, sans-serif;
+        font-size: 13px;
+        line-height: 1.5;
+        min-height: 0;
+      }
+      .email-body:focus {
+        border-color: #1a73e8;
+      }
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .status {
+        font-size: 12px;
+        color: #c62828;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="field">
+        <label>To:</label>
+        <input type="email" id="recipient">
+      </div>
+      <div class="field">
+        <label>Subject:</label>
+        <input type="text" id="subject">
+      </div>
+      <div class="body-label">Body (click to edit):</div>
+      <div id="email-body" class="email-body" contenteditable="true"></div>
+      <div class="controls">
+        <button id="send-btn" class="action">Send Email</button>
+        <button id="cancel-btn">Cancel</button>
+        <span id="status" class="status"></span>
+      </div>
+    </div>
+    <script>
+      const rowIndex = <?= rowIndex ?>;
+      document.getElementById('recipient').value = <?= JSON.stringify(recipientEmail) ?>;
+      document.getElementById('subject').value = <?= JSON.stringify(subject) ?>;
+      document.getElementById('email-body').innerHTML = <?= JSON.stringify(htmlBody) ?>;
+
+      document.getElementById('send-btn').addEventListener('click', () => {
+        const recipient = document.getElementById('recipient').value.trim();
+        const subject = document.getElementById('subject').value.trim();
+        const htmlBody = document.getElementById('email-body').innerHTML;
+        const status = document.getElementById('status');
+
+        if (!recipient || !/^\S+@\S+\.\S+$/.test(recipient)) {
+          status.textContent = 'Please enter a valid email address.';
+          return;
+        }
+
+        document.getElementById('send-btn').disabled = true;
+        document.getElementById('cancel-btn').disabled = true;
+        status.style.color = '#555';
+        status.textContent = 'Sending...';
+
+        google.script.run
+          .withSuccessHandler(() => google.script.host.close())
+          .withFailureHandler(err => {
+            status.style.color = '#c62828';
+            status.textContent = 'Error: ' + err.message;
+            document.getElementById('send-btn').disabled = false;
+            document.getElementById('cancel-btn').disabled = false;
+          })
+          .sendPreparedEmail_(rowIndex, recipient, subject, htmlBody);
+      });
+
+      document.getElementById('cancel-btn').addEventListener('click', () => {
+        google.script.run.cancelEmailSend_(rowIndex);
+        google.script.host.close();
+      });
+    </script>
+  </body>
+</html>

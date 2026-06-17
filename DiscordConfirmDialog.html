@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+    <style>
+      body { padding: 12px; font-size: 13px; }
+      h3 { margin-top: 0; margin-bottom: 8px; }
+      .meta { margin-bottom: 10px; color: #444; }
+      .chunk-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 10px 0 4px;
+      }
+      .chunk-label { font-weight: bold; font-size: 12px; color: #555; }
+      .copy-label {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 12px;
+        color: #1a73e8;
+        cursor: pointer;
+        user-select: none;
+      }
+      .copy-label input[type="checkbox"] { cursor: pointer; margin: 0; }
+      textarea {
+        width: 100%;
+        box-sizing: border-box;
+        font-family: monospace;
+        font-size: 11px;
+        resize: vertical;
+        background: #f8f8f8;
+        border: 1px solid #ccc;
+        padding: 6px;
+        transition: opacity 0.2s, background 0.2s;
+      }
+      textarea.done {
+        opacity: 0.4;
+        background: #e0e0e0;
+        color: #888;
+        pointer-events: none;
+      }
+      .copy-flash { color: #0b8043; font-size: 11px; margin-left: 4px; }
+      .buttons { margin-top: 14px; display: flex; gap: 8px; }
+    </style>
+  </head>
+  <body>
+    <h3>Confirm Discord Send</h3>
+    <div class="meta">
+      Sending to: <strong id="target-desc"></strong><br>
+      <span id="chunk-summary"></span>
+    </div>
+    <div id="chunks-container"></div>
+    <div class="buttons">
+      <button id="send-btn" class="action">Send</button>
+      <button id="manual-btn">Manually Sent</button>
+      <button id="cancel-btn">Cancel</button>
+    </div>
+    <script>
+      var chunks = <?!= JSON.stringify(chunks) ?>;
+      var sheetName = <?!= JSON.stringify(sheetName) ?>;
+      var rowIndex = <?= responseRowIndex ?>;
+      var targetDescription = <?!= JSON.stringify(targetDescription) ?>;
+      var useBotSend = <?!= JSON.stringify(useBotSend) ?>;
+
+      document.getElementById('target-desc').textContent = targetDescription;
+      document.getElementById('send-btn').textContent = useBotSend ? 'Send via Bot' : 'Send via Webhook';
+      document.getElementById('chunk-summary').textContent =
+        chunks.length === 1 ? '1 message chunk' : chunks.length + ' message chunks';
+
+      function copyToClipboard(text, flashEl) {
+        var copied = false;
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(function() {
+            showFlash(flashEl);
+          }).catch(function() {
+            fallbackCopy(text, flashEl);
+          });
+        } else {
+          fallbackCopy(text, flashEl);
+        }
+      }
+
+      function fallbackCopy(text, flashEl) {
+        var tmp = document.createElement('textarea');
+        tmp.value = text;
+        tmp.style.position = 'fixed';
+        tmp.style.opacity = '0';
+        document.body.appendChild(tmp);
+        tmp.focus();
+        tmp.select();
+        try { document.execCommand('copy'); } catch(e) {}
+        document.body.removeChild(tmp);
+        showFlash(flashEl);
+      }
+
+      function showFlash(el) {
+        el.textContent = '✓ Copied';
+        setTimeout(function() { el.textContent = ''; }, 1500);
+      }
+
+      var container = document.getElementById('chunks-container');
+      chunks.forEach(function(chunk, i) {
+        var header = document.createElement('div');
+        header.className = 'chunk-header';
+
+        var label = document.createElement('span');
+        label.className = 'chunk-label';
+        label.textContent = chunks.length === 1 ? 'Message:' : 'Chunk ' + (i + 1) + ' of ' + chunks.length + ':';
+        header.appendChild(label);
+
+        var copyLabel = document.createElement('label');
+        copyLabel.className = 'copy-label';
+        var cb = document.createElement('input');
+        cb.type = 'checkbox';
+        copyLabel.appendChild(cb);
+        copyLabel.appendChild(document.createTextNode(' Copy chunk'));
+        header.appendChild(copyLabel);
+
+        var flash = document.createElement('span');
+        flash.className = 'copy-flash';
+        header.appendChild(flash);
+
+        container.appendChild(header);
+
+        var ta = document.createElement('textarea');
+        ta.rows = 8;
+        ta.value = chunk;
+        ta.readOnly = true;
+        container.appendChild(ta);
+
+        cb.addEventListener('change', function() {
+          if (cb.checked) {
+            copyToClipboard(chunk, flash);
+            ta.classList.add('done');
+          } else {
+            ta.classList.remove('done');
+            flash.textContent = '';
+          }
+        });
+      });
+
+      document.getElementById('send-btn').addEventListener('click', function() {
+        document.getElementById('send-btn').disabled = true;
+        document.getElementById('cancel-btn').disabled = true;
+        google.script.run
+          .withSuccessHandler(function() { google.script.host.close(); })
+          .withFailureHandler(function(err) {
+            alert('Error: ' + (err.message || err));
+            document.getElementById('send-btn').disabled = false;
+            document.getElementById('cancel-btn').disabled = false;
+          })
+          .performDiscordSend(sheetName, rowIndex);
+      });
+
+      document.getElementById('manual-btn').addEventListener('click', function() {
+        document.getElementById('send-btn').disabled = true;
+        document.getElementById('manual-btn').disabled = true;
+        document.getElementById('cancel-btn').disabled = true;
+        google.script.run
+          .withSuccessHandler(function() { google.script.host.close(); })
+          .withFailureHandler(function(err) {
+            alert('Error: ' + (err.message || err));
+            document.getElementById('send-btn').disabled = false;
+            document.getElementById('manual-btn').disabled = false;
+            document.getElementById('cancel-btn').disabled = false;
+          })
+          .markDiscordManuallySent(sheetName, rowIndex);
+      });
+
+      document.getElementById('cancel-btn').addEventListener('click', function() {
+        document.getElementById('cancel-btn').disabled = true;
+        google.script.run
+          .withSuccessHandler(function() { google.script.host.close(); })
+          .cancelDiscordSend(sheetName, rowIndex);
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,4 @@
+gspread
+requests
+python-dotenv
+rich

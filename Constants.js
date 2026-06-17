@@ -67,6 +67,10 @@ const CHAR_SHEET_NAME_COL = 1;
 const CHAR_SHEET_WEBHOOK_COL = 24; // Column X
 /** Column index (1-based) for the Approval Status in the "Characters" sheet. */
 const CHAR_SHEET_APPROVAL_COL = 8; // Column H
+/** Column index (1-based) for the Discord Channel ID (bot) in the "Characters" sheet. */
+const CHAR_SHEET_CHANNEL_ID_COL = 25; // Column Y
+/** Column index (1-based) for the Discord Channel Name in the "Characters" sheet. */
+const CHAR_SHEET_CHANNEL_NAME_COL = 26; // Column Z
 
 /** Name of the sheet containing character data. */
 const CHARACTER_SHEET_NAME = 'Characters';
@@ -97,10 +101,15 @@ const PROP_PDF_FOLDER_ID = 'PDF_FOLDER_ID';
 const PROP_DISCORD_TEST_MODE = 'DISCORD_TEST_MODE';
 const PROP_TEST_WEBHOOK = 'TEST_WEBHOOK';
 const PROP_ANNOUNCEMENT_WEBHOOK = 'ANNOUNCEMENT_WEBHOOK'; // For #announcements channel
-const PROP_IC_CHAT_WEBHOOK = 'IC_CHAT_WEBHOOK';         // *** NEW *** For #ic-chat channel
-const PROP_IC_NEWS_FEED_WEBHOOK = 'IC_NEWS_FEED_WEBHOOK'; // *** NEW *** For #ic-news-feed channel
+const PROP_IC_CHAT_WEBHOOK = 'IC_CHAT_WEBHOOK';           // For #ic-chat channel
+const PROP_IC_NEWS_FEED_WEBHOOK = 'IC_NEWS_FEED_WEBHOOK'; // For #ic-news-feed channel
 const PROP_LARP_NAME = 'LARP_NAME';
 const PROP_TASK_COLOR_HEX = 'TASK_COLOR_HEX'; // For 'Any Narrator or Storyteller' assignment
+/** Discord Bot script property keys */
+const PROP_BOT_TOKEN = 'BOT_TOKEN';             // Token for the lightweight downtime-delivery bot
+const PROP_GUILD_ID = 'GUILD_ID';               // Discord server (guild) ID — right-click server icon → Copy Server ID
+const PROP_ST_CHANNEL_ID = 'ST_CHANNEL_ID';     // Channel ID for the ST Discord channel (bot delivery)
+const PROP_TEST_CHANNEL_ID = 'TEST_CHANNEL_ID'; // Channel ID used when Test Mode is active
 
 /** Discord Send Retry Constants */
 const MAX_RETRIES = 2; // Max number of retries (total 3 attempts)

@@ -26,7 +26,7 @@ function initialiseProject_() {
 
     // --- Sheet Creation ---
     const sheetsToCreate = [
-        { name: CHARACTER_SHEET_NAME, headers: ['Character Name', 'Player Name', 'Chronicle', 'Ancilla', 'Email', 'User ID', 'XP', 'Discord Handle', 'Short Form Link', 'Status', 'Image URL', 'Long Form Link', 'Approval Status', 'Approval Timestamp', 'Approval Notes', 'Influence 1', 'Influence 2', 'Influence 3', 'Influence 4', 'Influence 5', 'Influence 6', 'Influence 7', 'Influence 8', 'Influence 9', 'Influence 10', 'Webhook'] },
+        { name: CHARACTER_SHEET_NAME, headers: ['Character Name', 'Player Name', 'Chronicle', 'Ancilla', 'Email', 'User ID', 'XP', 'Discord Handle', 'Short Form Link', 'Status', 'Image URL', 'Long Form Link', 'Approval Status', 'Approval Timestamp', 'Approval Notes', 'Influence 1', 'Influence 2', 'Influence 3', 'Influence 4', 'Influence 5', 'Influence 6', 'Influence 7', 'Influence 8', 'Influence 9', 'Influence 10', 'Webhook', 'Discord Channel ID', 'Discord Channel Name'] },
         { name: NPC_SHEET_NAME, headers: ['NPC Name', 'Chronicle', 'Status', 'Notes'] },
         { name: ELITE_INFLUENCES_SHEET_NAME, headers: ['Influence Name', 'Description'] },
         { name: UNDERWORLD_INFLUENCES_SHEET_NAME, headers: ['Influence Name', 'Description'] },

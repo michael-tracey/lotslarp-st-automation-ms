@@ -1,3 +1,17 @@
 .clasp
 .clasp.json
 sample-data/
+
+# Secrets — match anywhere in the tree
+.env
+service_account.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Editor swap/temp files
+*.swp
+*.swo
+*~

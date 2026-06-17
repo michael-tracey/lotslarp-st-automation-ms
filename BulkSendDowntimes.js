@@ -2,15 +2,16 @@
  * @OnlyCurrentDoc
  */
 
-let isPaused = false;
-let isStopped = false;
 const CACHE_KEY = 'bulkSendStatus';
 const SUMMARY_CACHE_KEY = 'bulkSendSummary';
+const STOP_CACHE_KEY = 'bulkSendStop';
+const PAUSE_CACHE_KEY = 'bulkSendPause';
+const MAX_EXECUTION_MS = 5 * 60 * 1000; // bail out before GAS's 6-min hard limit
 
 function showBulkSendDowntimesDialog() {
   const html = HtmlService.createHtmlOutputFromFile('BulkSendDowntimesDialog')
     .setWidth(600)
-    .setHeight(400);
+    .setHeight(580);
   SpreadsheetApp.getUi().showModalDialog(html, 'Bulk Send Downtimes');
 }
 
@@ -86,27 +87,39 @@ function getDebugState() {
 }
 
 function startSending() {
-  isStopped = false;
-  isPaused = false;
+  const cache = CacheService.getScriptCache();
+  cache.remove(STOP_CACHE_KEY);
+  cache.remove(PAUSE_CACHE_KEY);
+  clearDiscordRetryLog_();
+
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
   const allDowntimes = getAllDowntimes();
-  const cache = CacheService.getScriptCache();
   cache.put(CACHE_KEY, JSON.stringify(allDowntimes));
 
   let successCount = 0;
   let failureCount = 0;
+  const startTime = new Date().getTime();
 
   for (let i = 0; i < allDowntimes.length; i++) {
     const downtime = allDowntimes[i];
-    if (downtime.isSent) {
-      continue;
-    }
+    if (downtime.isSent) continue;
 
-    if (isStopped) {
-      break;
-    }
-    while (isPaused) {
+    if (cache.get(STOP_CACHE_KEY) === 'true') break;
+
+    while (cache.get(PAUSE_CACHE_KEY) === 'true') {
+      if (cache.get(STOP_CACHE_KEY) === 'true') break;
       Utilities.sleep(1000);
+    }
+    if (cache.get(STOP_CACHE_KEY) === 'true') break;
+
+    if (new Date().getTime() - startTime > MAX_EXECUTION_MS) {
+      for (let j = i; j < allDowntimes.length; j++) {
+        if (!allDowntimes[j].isSent) allDowntimes[j].status = 'timeout';
+      }
+      cache.put(CACHE_KEY, JSON.stringify(allDowntimes));
+      const summary = { successCount, failureCount, timedOut: true };
+      cache.put(SUMMARY_CACHE_KEY, JSON.stringify(summary));
+      return;
     }
 
     try {
@@ -131,7 +144,7 @@ function startSending() {
     cache.put(CACHE_KEY, JSON.stringify(allDowntimes));
   }
 
-  const summary = { successCount, failureCount };
+  const summary = { successCount, failureCount, timedOut: false };
   cache.put(SUMMARY_CACHE_KEY, JSON.stringify(summary));
 }
 
@@ -148,13 +161,13 @@ function getSendSummary() {
 }
 
 function stopSending() {
-  isStopped = true;
+  CacheService.getScriptCache().put(STOP_CACHE_KEY, 'true', 600);
 }
 
 function pauseSending() {
-  isPaused = true;
+  CacheService.getScriptCache().put(PAUSE_CACHE_KEY, 'true', 600);
 }
 
 function resumeSending() {
-  isPaused = false;
+  CacheService.getScriptCache().remove(PAUSE_CACHE_KEY);
 }

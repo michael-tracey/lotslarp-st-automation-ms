@@ -120,6 +120,46 @@ function getCharacterWebhook_(characterName) {
 
 
 /**
+ * Retrieves the Discord channel ID for a specific character name (col Y of Characters sheet).
+ * @param {string} characterName The name of the character.
+ * @returns {string|false} The channel ID string if found, otherwise false.
+ */
+function getCharacterChannelId_(characterName) {
+  if (!characterName || String(characterName).trim() === '') return false;
+
+  const characterSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CHARACTER_SHEET_NAME);
+  if (!characterSheet) {
+    Logger.log(`Cannot find character sheet: ${CHARACTER_SHEET_NAME}`);
+    return false;
+  }
+
+  try {
+    const lastRow = characterSheet.getLastRow();
+    if (lastRow < 1) return false;
+
+    const data = characterSheet.getRange(1, CHAR_SHEET_NAME_COL, lastRow, CHAR_SHEET_CHANNEL_ID_COL).getValues();
+    const nameColIndex = 0;
+    const channelIdColIndex = CHAR_SHEET_CHANNEL_ID_COL - 1;
+    const cleanTargetName = String(characterName).toLowerCase().trim();
+
+    for (let i = 0; i < data.length; i++) {
+      const currentName = data[i][nameColIndex];
+      if (currentName && String(currentName).toLowerCase().trim() === cleanTargetName) {
+        const channelId = data[i][channelIdColIndex];
+        if (channelId && String(channelId).trim() !== '') {
+          return String(channelId).trim();
+        }
+        return false;
+      }
+    }
+    return false;
+  } catch (error) {
+    Logger.log(`Error retrieving channel ID for "${characterName}": ${error}`);
+    return false;
+  }
+}
+
+/**
  * Validates a character name against the 'Characters' sheet and checks for a webhook.
  * @param {string} name The character name to test.
  * @returns {{isMatch: boolean, hasWebhook: boolean}} Object indicating if the name matches and if a webhook exists.

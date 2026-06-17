@@ -291,7 +291,28 @@ This function runs automatically whenever a cell is edited on a sheet named "Mon
     * Automatically created if it doesn't exist.
     * Records various script actions with a timestamp, user, action type, sheet name, and details. Useful for troubleshooting and auditing.
 
-## 6. Troubleshooting Tips
+## 6. Local Utilities (`utilities/`)
+
+Discord blocks authenticated bot API calls originating from Google's servers, and
+the per-character webhook system is prone to server-wide rate limiting. To work
+around both, downtime results can be delivered from your own machine using the
+Python scripts in the [`utilities/`](utilities/) directory:
+
+* **`send_downtimes.py`** — reads the active downtime sheet and posts each
+  player's results to their dedicated Discord channel via the bot API. Supports
+  dry-run previews, an interactive sheet picker, automated vs. confirm-each send
+  modes, pause/stop controls, and writes the sent status back to the sheet.
+* **`populate_channels.py`** — fills the **Discord Channel ID** (col Y) and
+  **Discord Channel Name** (col Z) on the `Characters` sheet by matching each
+  character's webhook to its channel via the Discord guild API.
+
+See [`utilities/README.md`](utilities/README.md) for full setup and usage.
+
+> **Note:** The `utilities/` directory is excluded from `clasp push` via
+> `.claspignore`, so these local scripts and their secrets are never uploaded to
+> the Apps Script project.
+
+## 7. Troubleshooting Tips
 
 * **Function Not Found / Menu Item Error:**
     * Ensure all script files (`Main.gs`, `Constants.gs`, `Triggers.gs`, etc.) are present in your Apps Script project and have been saved.

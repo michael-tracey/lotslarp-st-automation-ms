@@ -1,0 +1,15 @@
+# Files matched here are NOT pushed to the Apps Script project by `clasp push`.
+
+# Local Python utilities — these run on your machine, not in Apps Script.
+utilities/**
+
+# Never push secrets, even if one lands outside utilities/.
+**/.env
+**/service_account.json
+
+# Repo docs and meta that don't belong in the Apps Script project.
+.git/**
+.gitignore
+README.md
+**/*.md
+**/*.swp

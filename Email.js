@@ -117,32 +117,55 @@ function handleSendEmail_(sheet, responseRowIndex) {
         return;
     }
 
-    const logDetailsBase = `Row: ${responseRowIndex}, Char: ${characterName}, To: ${recipientEmail}`;
+    // Show preview dialog for last-minute editing before sending
+    const template = HtmlService.createTemplateFromFile('EmailPreviewDialog');
+    template.rowIndex = responseRowIndex;
+    template.recipientEmail = recipientEmail;
+    template.subject = subject;
+    template.htmlBody = htmlBody;
+    const html = template.evaluate().setWidth(700).setHeight(560);
+    SpreadsheetApp.getUi().showModalDialog(html, `Preview: ${characterName}'s Downtime Email`);
+}
 
-    // --- Send Email ---
+/**
+ * Called by EmailPreviewDialog when the user confirms. Sends the (possibly edited) email.
+ */
+function sendPreparedEmail_(rowIndex, recipientEmail, subject, htmlBody) {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    const responseRowData = sheet.getRange(rowIndex, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const characterName = responseRowData[CHARACTER_NAME_COL - 1];
+    const sheetName = sheet.getName();
+    const logDetailsBase = `Row: ${rowIndex}, Char: ${characterName}, To: ${recipientEmail}`;
+
     try {
         GmailApp.sendEmail(recipientEmail, subject, '', { htmlBody: htmlBody });
 
-        // --- Update Sheet on Success ---
-        const statusCell = sheet.getRange(responseRowIndex, STATUS_COL);
-        const timestampCell = sheet.getRange(responseRowIndex, TIMESTAMP_COL); // Use response row timestamp col
-        const checkboxCell = sheet.getRange(responseRowIndex, SEND_EMAIL_COL);
+        const statusCell = sheet.getRange(rowIndex, STATUS_COL);
+        const timestampCell = sheet.getRange(rowIndex, TIMESTAMP_COL);
+        const checkboxCell = sheet.getRange(rowIndex, SEND_EMAIL_COL);
 
         timestampCell.setValue(new Date()).setBackgroundRGB(229, 255, 204);
         statusCell.setValue('sent');
         checkboxCell.setBackgroundRGB(229, 255, 204);
 
         Logger.log(`Successfully sent downtime results for ${characterName} to ${recipientEmail}.`);
-        logAudit_('Sent Email', sheetName, logDetailsBase); // Log success
-        ui.alert(`Email sent successfully to ${recipientEmail}.`);
-
+        logAudit_('Sent Email', sheetName, logDetailsBase);
     } catch (error) {
-        Logger.log(`Error sending email for ${characterName} (Row ${responseRowIndex}) to ${recipientEmail}: ${error}`);
-        logAudit_('Sent Email FAILED', sheetName, `${logDetailsBase}, Error: ${error.message}`); // Log failure
-        SpreadsheetApp.getUi().alert(`Failed to send email to ${recipientEmail}: ${error.message}`);
-         try {
-             const checkboxCell = sheet.getRange(responseRowIndex, SEND_EMAIL_COL);
-             if (checkboxCell.isChecked()) { checkboxCell.setValue(false); }
-        } catch(err) { Logger.log(`Could not uncheck email box on failure: ${err}`);}
+        Logger.log(`Error sending email for ${characterName} (Row ${rowIndex}) to ${recipientEmail}: ${error}`);
+        logAudit_('Sent Email FAILED', sheetName, `${logDetailsBase}, Error: ${error.message}`);
+        throw error;
+    }
+}
+
+/**
+ * Called by EmailPreviewDialog when the user cancels. Unchecks the Send Email checkbox.
+ */
+function cancelEmailSend_(rowIndex) {
+    try {
+        const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+        const checkboxCell = sheet.getRange(rowIndex, SEND_EMAIL_COL);
+        if (checkboxCell.isChecked()) { checkboxCell.setValue(false); }
+    } catch(err) {
+        Logger.log(`Could not uncheck email box on cancel: ${err}`);
     }
 }

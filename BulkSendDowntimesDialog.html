@@ -44,6 +44,38 @@
         margin-top: 10px;
         font-weight: bold;
       }
+      .activity-bar {
+        margin-top: 8px;
+        padding: 6px 10px;
+        background-color: #e8f4fd;
+        border-left: 3px solid #1a73e8;
+        border-radius: 2px;
+        font-size: 12px;
+        color: #174ea6;
+        display: none;
+      }
+      .log-section-header {
+        margin-top: 10px;
+        font-size: 12px;
+        font-weight: bold;
+        color: #555;
+      }
+      .execution-log {
+        margin-top: 4px;
+        max-height: 110px;
+        overflow-y: auto;
+        background: #1e1e1e;
+        color: #d4d4d4;
+        font-family: monospace;
+        font-size: 11px;
+        padding: 6px 8px;
+        border-radius: 3px;
+      }
+      .log-entry {
+        padding: 1px 0;
+        white-space: pre-wrap;
+        word-break: break-word;
+      }
     </style>
   </head>
   <body>
@@ -57,6 +89,7 @@
         <button id="pause-button" disabled>Pause</button>
         <button id="stop-button" disabled>Stop</button>
       </div>
+      <div id="activity-bar" class="activity-bar"></div>
       <table>
         <thead>
           <tr>
@@ -70,11 +103,14 @@
         <tbody id="downtime-table-body">
         </tbody>
       </table>
+      <div class="log-section-header">Execution Log</div>
+      <div id="execution-log" class="execution-log"></div>
     </div>
     <script>
       let isPaused = false;
       let isStopped = false;
       let statusInterval;
+      let lastLogCount = 0;
 
       document.getElementById('send-button').addEventListener('click', () => {
         document.getElementById('send-button').disabled = true;
@@ -82,9 +118,13 @@
         document.getElementById('stop-button').disabled = false;
         isPaused = false;
         isStopped = false;
-        google.script.run.startSending();
+        google.script.run.withFailureHandler(showError).startSending();
+        lastLogCount = 0;
+        document.getElementById('execution-log').innerHTML = '';
         statusInterval = setInterval(() => {
           google.script.run.withSuccessHandler(updateDowntimeList).withFailureHandler(showError).getSendStatus();
+          google.script.run.withSuccessHandler(updateActivity).getDiscordRetryActivity();
+          google.script.run.withSuccessHandler(appendLogEntries).getDiscordRetryLog();
         }, 2000);
       });
 
@@ -126,6 +166,8 @@
           } else if (downtime.status === 'pending') {
             statusIcon = '<span class="status-icon pending">Not Sent</span>';
             allProcessed = false;
+          } else if (downtime.status === 'timeout') {
+            statusIcon = '<span class="status-icon error">Timed Out</span>';
           } else {
             statusIcon = '<span class="status-icon"></span>';
             allProcessed = false;
@@ -150,7 +192,11 @@
       }
 
       function showSummary(summary) {
-        alert(`Bulk send complete!\n\nSuccessful: ${summary.successCount}\nFailed: ${summary.failureCount}`);
+        let msg = `Bulk send complete!\n\nSuccessful: ${summary.successCount}\nFailed: ${summary.failureCount}`;
+        if (summary.timedOut) {
+          msg += '\n\n⚠️ The process hit the 5-minute execution limit. Remaining downtimes were not sent. Run Bulk Send again to continue.';
+        }
+        alert(msg);
       }
 
       function showError(error) {
@@ -158,6 +204,30 @@
         alert('An error occurred: ' + error.message);
       }
       
+      function updateActivity(msg) {
+        const bar = document.getElementById('activity-bar');
+        if (msg) {
+          bar.textContent = msg;
+          bar.style.display = 'block';
+        } else {
+          bar.style.display = 'none';
+        }
+      }
+
+      function appendLogEntries(entries) {
+        if (entries.length <= lastLogCount) return;
+        const log = document.getElementById('execution-log');
+        for (let i = lastLogCount; i < entries.length; i++) {
+          const div = document.createElement('div');
+          div.className = 'log-entry';
+          const time = new Date().toLocaleTimeString();
+          div.textContent = `[${time}] ${entries[i]}`;
+          log.appendChild(div);
+        }
+        lastLogCount = entries.length;
+        log.scrollTop = log.scrollHeight;
+      }
+
       function updateDebugState(debugState) {
         document.getElementById('debug-state').textContent = debugState;
       }

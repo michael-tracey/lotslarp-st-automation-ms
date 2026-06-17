@@ -26,7 +26,11 @@ function onOpen() {
     [PROP_TEST_WEBHOOK]: 'YOUR_TEST_DISCORD_WEBHOOK_URL_HERE', // Replace if needed
     [PROP_IC_NEWS_FEED_WEBHOOK]: 'PROP_IC_NEWS_FEED_WEBHOOK',
     [PROP_LARP_NAME]: 'My Awesome LARP',
-    [PROP_TASK_COLOR_HEX]: '#FFFF00' // Default color for 'Any Narrator or Storyteller'
+    [PROP_TASK_COLOR_HEX]: '#FFFF00', // Default color for 'Any Narrator or Storyteller'
+    [PROP_BOT_TOKEN]: 'YOUR_BOT_TOKEN_HERE',
+    [PROP_GUILD_ID]: 'YOUR_GUILD_ID_HERE',
+    [PROP_ST_CHANNEL_ID]: 'YOUR_ST_CHANNEL_ID_HERE',
+    [PROP_TEST_CHANNEL_ID]: 'YOUR_TEST_CHANNEL_ID_HERE',
   };
 
   let propertiesUpdated = false;
@@ -134,6 +138,7 @@ function onOpen() {
   maintenanceMenu.addItem('Manually Test Usernames', 'manuallyTestCharacterNames_'); // Wrapper below
   maintenanceMenu.addItem('Check Character Count', 'checkCharacterCount_'); // In Discord.gs
   maintenanceMenu.addItem('Run Permission Test', 'testAllFeaturesAndPermissions'); // In PermissionTester.js
+  maintenanceMenu.addItem('Populate Discord Channel Info from Webhooks', 'populateChannelInfoFromWebhooks_'); // In Discord.js
   const triggerMenu = ui.createMenu('Reinstall Triggers');
   triggerMenu.addItem('Reinstall Form Trigger', 'reinstallFormTrigger_'); // In Triggers.gs
   triggerMenu.addItem('Reinstall Edit Trigger', 'reinstallOnEditTrigger_'); // In Triggers.gs
@@ -352,11 +357,14 @@ function onFormSubmitHandler_(e) {
 Stack: ${error.stack}`);
     // Notify STs about the failure
     try {
-        const stWebhook = PropertiesService.getScriptProperties().getProperty(PROP_ST_WEBHOOK);
-        if (stWebhook && stWebhook !== 'YOUR_STORYTELLER_DISCORD_WEBHOOK_URL_HERE') {
-            // Use sendDiscordWebhookMessage_ helper for potential test mode override if desired for error reports too
-            const errorSent = sendDiscordWebhookMessage_(stWebhook, `🚨 **Error processing form submission!**\nSubmitter: ${email}\nError: ${error.message}\nCheck script logs for details.`, 'Form Submit Error'); // In Discord.gs
-            if (!errorSent) { Logger.log("Failed to send form submission error report to Discord."); }
+        const _sp = PropertiesService.getScriptProperties();
+        const _stCh = _sp.getProperty(PROP_ST_CHANNEL_ID);
+        const _stWh = _sp.getProperty(PROP_ST_WEBHOOK);
+        const _errMsg = `🚨 **Error processing form submission!**\nSubmitter: ${email}\nError: ${error.message}\nCheck script logs for details.`;
+        if (_stCh && _stCh !== 'YOUR_ST_CHANNEL_ID_HERE') {
+            sendDiscordBotMessage_(_stCh, _errMsg, 'Form Submit Error');
+        } else if (_stWh && _stWh !== 'YOUR_STORYTELLER_DISCORD_WEBHOOK_URL_HERE') {
+            sendDiscordWebhookMessage_(_stWh, _errMsg, 'Form Submit Error');
         }
         GmailApp.sendEmail('avllotslarp@gmail.com', `Error Processing Downtime Submission - ${email}`, `An error occurred while processing the downtime submission from ${email}:\n\n${error}\n\n${error.stack}`);
     } catch (notifyError) {
