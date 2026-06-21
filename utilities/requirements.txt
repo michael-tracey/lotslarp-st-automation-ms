@@ -2,3 +2,4 @@ gspread
 requests
 python-dotenv
 rich
+python-docx

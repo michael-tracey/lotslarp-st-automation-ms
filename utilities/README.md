@@ -109,3 +109,42 @@ python populate_channels.py
 
 Run this before your first `send_downtimes.py` run, and again whenever new
 players are added or webhooks are changed.
+
+---
+
+### `create_nominations_doc.py` — Build the randomized Player Nominations doc
+
+Reads the **Nominations?** column from a monthly sheet, cleans up the raw text
+(drops blank lines, strips leading hyphens/bullets, removes wrapping quotes and
+dangling unclosed quotes), randomizes the order, and writes a local **`.docx`**
+file titled `LOTSLARP Player Nominations: <Month> <Year>` with every nomination
+as a bullet point. This replaces the old shell pipeline
+`awk '!/^$/' june.txt | shuf | sed "s/^\-//"`.
+
+```bash
+# Pick the month interactively (defaults to most recent)
+python create_nominations_doc.py
+
+# Skip the month picker
+python create_nominations_doc.py "June 2026"
+
+# Choose the output path
+python create_nominations_doc.py -o ~/noms.docx
+
+# Print the cleaned, randomized list to the console — write no file
+python create_nominations_doc.py --dry-run
+
+# Keep the sheet's order instead of randomizing
+python create_nominations_doc.py --no-shuffle
+```
+
+It auto-detects the column whose header is `Nominations?` and asks you to
+confirm (press Enter to accept, or type a column letter like `AH` to override).
+Each cell may hold several nominations on separate lines; every non-empty line
+becomes its own bullet.
+
+The script writes a `.docx` next to where you run it (or to `--output`).
+**Upload it to Google Drive and open it** (or File → Open in Google Docs) to
+convert it to a native Google Doc — the Heading 1 title and the bullet list
+carry over. Reading the sheet uses the service account; no Google login or
+OAuth setup is needed.
