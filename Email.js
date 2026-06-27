@@ -23,8 +23,7 @@ function sendFormSubmissionEmail_(email, timestamp, itemResponses) {
   htmlBody += "</ul>";
 
   try {
-    // Consider making the recipient email a script property
-    GmailApp.sendEmail('avllotslarp@gmail.com', subject, '', { htmlBody: htmlBody });
+    GmailApp.sendEmail(getNotificationEmail_(), subject, '', { htmlBody: htmlBody }); // Recipient configurable via NOTIFICATION_EMAIL property
     Logger.log(`Sent form submission notification email for ${email}.`);
   } catch (error) {
       Logger.log(`Error sending form submission email for ${email}: ${error}`);
@@ -50,32 +49,14 @@ function handleSendEmail_(sheet, responseRowIndex) {
     const characterName = responseRowData[CHARACTER_NAME_COL - 1];
     const sheetName = sheet.getName(); // Get sheet name for logging
 
-    // --- Prompt for Email Address ---
-    const ui = SpreadsheetApp.getUi();
-    const emailPrompt = ui.prompt(`Enter email address to send ${characterName}'s downtime results to:`, ui.ButtonSet.OK_CANCEL);
-
-    if (emailPrompt.getSelectedButton() !== ui.Button.OK) {
-        Logger.log(`Email send cancelled by user for ${characterName} (Row ${responseRowIndex}).`);
-        // Only uncheck if triggered by checkbox (manual doesn't have 'e')
-        try {
-             const checkboxCell = sheet.getRange(responseRowIndex, SEND_EMAIL_COL);
-             if (checkboxCell.isChecked()) { // Check current state before unchecking
-                 checkboxCell.setValue(false);
-             }
-        } catch(err) { Logger.log(`Could not uncheck email box on cancel: ${err}`);}
-        return;
-    }
-
-    const recipientEmail = emailPrompt.getResponseText().trim();
-    // Basic email validation
-    if (!recipientEmail || !/^\S+@\S+\.\S+$/.test(recipientEmail)) {
-        ui.alert(`Invalid email address provided: "${recipientEmail}". Please try again.`);
-        Logger.log(`Email send cancelled for ${characterName} (Row ${responseRowIndex}): Invalid email "${recipientEmail}".`);
-         try {
-             const checkboxCell = sheet.getRange(responseRowIndex, SEND_EMAIL_COL);
-             if (checkboxCell.isChecked()) { checkboxCell.setValue(false); }
-        } catch(err) { Logger.log(`Could not uncheck email box on invalid address: ${err}`);}
-        return;
+    // --- Look up the recipient's email from the Characters sheet (col AA) ---
+    // Pre-fills the preview dialog's "To:" field. If no email is on file it
+    // starts blank; either way the address stays editable before sending.
+    const recipientEmail = getCharacterEmail_(characterName); // In SheetData.js
+    if (recipientEmail) {
+        Logger.log(`Pre-filled email for ${characterName}: ${recipientEmail}`);
+    } else {
+        Logger.log(`No email on file for ${characterName}; preview "To:" field will start blank.`);
     }
 
     // --- Construct Message Body ---

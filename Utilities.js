@@ -168,6 +168,16 @@ function getTestWebhookUrl_() {
     return PropertiesService.getScriptProperties().getProperty(PROP_TEST_WEBHOOK);
 }
 
+/**
+ * Gets the email address that should receive Storyteller notifications
+ * (new form submissions, processing errors). Falls back to the original
+ * project address if the script property has not been configured.
+ * @returns {string} The notification recipient email address.
+ */
+function getNotificationEmail_() {
+    return PropertiesService.getScriptProperties().getProperty(PROP_NOTIFICATION_EMAIL) || 'avllotslarp@gmail.com';
+}
+
 // --- Sheet/Date Utilities ---
 
 /**

@@ -64,7 +64,7 @@ Before using the script, several properties must be configured in the Apps Scrip
 The script relies on specific sheet names for its operations:
 
 * **Downtime Sheets:** Named in the format "Month Year" (e.g., `April 2025`). The script uses the `PROP_DOWNTIME_MONTH` and `PROP_DOWNTIME_YEAR` properties to determine the current active downtime sheet.
-* **`Characters`:** Stores player character information, including names (Column A), individual Discord webhooks (Column X), and avatar URLs (Column Y).
+* **`Characters`:** Stores player character information. Key columns the script reads by position are: **Character Name** (Column A), **Approved** status (Column J), individual Discord **Webhook** (Column X), **Channel ID** (Column Y), **Channel Name** (Column Z), and the player's **Email** address (Column AA). The Email column (AA) is used to pre-fill the recipient when sending downtime results by email — see *Send Email* below. The full header layout is created automatically by **Initialise Project**.
 * **`NPCs`:** Stores Non-Player Character information, including names (Column A) and avatar URLs (Column Y) for the scheduled message sender override.
 * **`Influences`:** Lists character specializations.
     * Column A: Elite Character Name
@@ -173,7 +173,7 @@ These functions help populate cells with randomized or calculated data. Generall
             * **Green:** Name found, and webhook URL is present.
         * Shows an alert summarizing any issues found.
 
-* **`Check Character Count`**: Reads the `Characters` sheet, counts how many characters have "approved" in their approval status column (Column H), and sends this count to the `PROP_ST_WEBHOOK`. Respects Test Mode.
+* **`Check Character Count`**: Reads the `Characters` sheet, counts how many characters have "approved" in their **Approved** status column (Column J), and sends this count to the `PROP_ST_WEBHOOK`. Respects Test Mode.
 
 * **`Manually Send Discord for Selected Row`**:
     * **Usage:** Select any cell in a *response row* (odd-numbered row) for which you want to send Discord results.
@@ -181,7 +181,7 @@ These functions help populate cells with randomized or calculated data. Generall
 
 * **`Manually Send Email for Selected Row`**:
     * **Usage:** Select any cell in a *response row* (odd-numbered row) for which you want to send email results.
-    * **Function:** Triggers the `handleSendEmail_` function for that row. It will prompt for an email address and confirmation (especially if on an older sheet). This manual version *ignores* the "sent" status in the status column.
+    * **Function:** Triggers the `handleSendEmail_` function for that row. It looks up the character's email address from the **Email** column (AA) of the `Characters` sheet and pre-fills it in the preview dialog's editable **To:** field (you can change it there if the player needs the results sent elsewhere, or type one in if none is on file). This manual version *ignores* the "sent" status in the status column.
 
 * **`Fetch Downtimes (Placeholder)`**: Currently a placeholder, does nothing.
 
@@ -221,7 +221,7 @@ This function runs automatically whenever a cell is edited on a sheet named "Mon
 * **"Send Email" Checkbox (Column D, Odd Rows):**
     * If checked:
         * It will first check if the current sheet is an older month's sheet. If so, it will ask for "Yes/No" confirmation before proceeding (unless it's within the first 7 days of the next month).
-        * If confirmed (or not an old sheet/in grace period), it calls `handleSendEmail_` which prompts for the recipient's email address, then sends the formatted results.
+        * If confirmed (or not an old sheet/in grace period), it calls `handleSendEmail_`. This looks up the character's email from the **Email** column (AA) of the `Characters` sheet and opens a preview dialog with that address pre-filled in an editable **To:** field. You can edit the recipient (or enter one if none is on file) and the body before clicking **Send Email**.
         * On success, it updates the status to "sent", adds a timestamp, and colors the checkbox cell green.
         * On failure, it alerts the user and unchecks the box.
     * **Note:** This trigger *ignores* the status in Column B.
@@ -312,7 +312,80 @@ See [`utilities/README.md`](utilities/README.md) for full setup and usage.
 > `.claspignore`, so these local scripts and their secrets are never uploaded to
 > the Apps Script project.
 
-## 7. Troubleshooting Tips
+## 7. Onboarding a New LARP
+
+To set this whole system up for a different game, you create a **new Google
+Sheet with its own bound Apps Script project** and push this code into it. The
+fastest, most reliable way is [`clasp`](https://github.com/google/clasp) — the
+same tool this repo already uses — which can both create the Sheet+script and
+upload the code in two commands.
+
+> **Why not a "create-everything" script via the Google API?** Creating a bound
+> Apps Script project programmatically requires the Apps Script API with
+> *interactive user OAuth*; it can't be done with the service account in
+> `utilities/`. clasp already handles all of that, so we wrap clasp instead of
+> reinventing it.
+
+Note that `.clasp.json` is **gitignored** — a fresh clone is therefore *not*
+linked to any existing project, which is exactly what you want when standing up
+a new game (no risk of pushing into the original LARP's project).
+
+### 7.1. Automated (recommended)
+
+```bash
+# 1. Make sure clasp is installed and you've enabled the Apps Script API once
+#    at https://script.google.com/home/usersettings
+npm install -g @google/clasp
+
+# 2. Clone a fresh copy for the new game
+git clone git@github.com:michael-tracey/lotslarp-st-automation-ms.git new-larp
+cd new-larp
+
+# 3. Run the onboarding helper with the new project's title
+./utilities/onboard_new_larp.sh "Nightfall LARP — ST Automation"
+```
+
+The helper ([`utilities/onboard_new_larp.sh`](utilities/onboard_new_larp.sh))
+will:
+
+1. Confirm clasp is installed and you're logged in (`clasp login` if not).
+2. Run `clasp create --type sheets` to create a new Google Sheet **and** its
+   bound Apps Script project.
+3. Run `clasp push` to upload all the `.js`/`.html` code.
+4. Print the new Sheet/script URLs and the manual next steps below.
+
+It refuses to run if a `.clasp.json` already exists, so it can never overwrite
+or push into an existing project.
+
+### 7.2. Manual (the same thing, by hand)
+
+If you'd rather not use the helper:
+
+```bash
+git clone git@github.com:michael-tracey/lotslarp-st-automation-ms.git new-larp
+cd new-larp
+clasp login
+clasp create --type sheets --title "Nightfall LARP — ST Automation"
+clasp push -f
+```
+
+### 7.3. Finish setup in the new Sheet
+
+Whichever route you took, the new project still needs game-specific config:
+
+1. Open the new Google Sheet (URL printed by `clasp create`) and reload it.
+2. Run **Storyteller Menu > Maintenance > Initialise Project** to create all the
+   sheets with the correct headers (see section 2.1).
+3. Set the **Script Properties** (webhooks, form ID, downtime month/year, etc.)
+   — see section 2.2 for the full list.
+4. Create the downtime Google Form, then reinstall the triggers:
+   **Reinstall Form Trigger** and **Reinstall Edit Trigger** from the
+   Maintenance submenu.
+5. (Optional) Configure the local Python utilities for the new game — see
+   [`utilities/README.md`](utilities/README.md). Each game needs its own
+   `utilities/.env` and `service_account.json`.
+
+## 8. Troubleshooting Tips
 
 * **Function Not Found / Menu Item Error:**
     * Ensure all script files (`Main.gs`, `Constants.gs`, `Triggers.gs`, etc.) are present in your Apps Script project and have been saved.

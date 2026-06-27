@@ -120,6 +120,54 @@ function getCharacterWebhook_(characterName) {
 
 
 /**
+ * Retrieves the player's email address for a specific character name
+ * (col AA / CHAR_SHEET_EMAIL_COL of the Characters sheet).
+ * @param {string} characterName The name of the character.
+ * @returns {string} The email address if found and valid, otherwise an empty string.
+ */
+function getCharacterEmail_(characterName) {
+  if (!characterName || String(characterName).trim() === '') return '';
+
+  const characterSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(CHARACTER_SHEET_NAME);
+  if (!characterSheet) {
+    Logger.log(`Cannot find character sheet: ${CHARACTER_SHEET_NAME}`);
+    return '';
+  }
+
+  try {
+    const lastRow = characterSheet.getLastRow();
+    if (lastRow < 1) return ''; // Empty sheet
+
+    // Fetch names through the email column in one read.
+    const data = characterSheet.getRange(1, CHAR_SHEET_NAME_COL, lastRow, CHAR_SHEET_EMAIL_COL - CHAR_SHEET_NAME_COL + 1).getValues();
+    const nameColIndex = 0; // Index within the fetched data array
+    const emailColIndex = CHAR_SHEET_EMAIL_COL - CHAR_SHEET_NAME_COL; // Index within the fetched data array
+
+    const cleanTargetName = String(characterName).toLowerCase().trim();
+
+    for (let i = 0; i < data.length; i++) {
+        const currentName = data[i][nameColIndex];
+        if (currentName && String(currentName).toLowerCase().trim() === cleanTargetName) {
+            const email = String(data[i][emailColIndex] || '').trim();
+            if (email && /^\S+@\S+\.\S+$/.test(email)) {
+                Logger.log(`Email found for character '${characterName}'.`);
+                return email;
+            }
+            Logger.log(`No valid email on file for character '${characterName}'.`);
+            return ''; // Found name but email is missing/invalid
+        }
+    }
+
+    Logger.log(`Email not found for character '${characterName}' (name not in sheet).`);
+    return ''; // Name not found
+  } catch (error) {
+      Logger.log(`Error retrieving character email for "${characterName}": ${error}`);
+      return '';
+  }
+}
+
+
+/**
  * Retrieves the Discord channel ID for a specific character name (col Y of Characters sheet).
  * @param {string} characterName The name of the character.
  * @returns {string|false} The channel ID string if found, otherwise false.
@@ -800,7 +848,7 @@ function getDowntimeProgressByNarrator_(sheet) {
 function getNarrators_() {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     // Use a constant for the sheet name for maintainability
-    const NARRATOR_SHEET_NAME = 'Narrators';
+    const NARRATOR_SHEET_NAME = 'narrators'; // Case-sensitive: tab is lowercase, matching login() and the narrator web app
     const narratorSheet = ss.getSheetByName(NARRATOR_SHEET_NAME);
 
     if (!narratorSheet) {

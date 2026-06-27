@@ -148,3 +148,23 @@ The script writes a `.docx` next to where you run it (or to `--output`).
 convert it to a native Google Doc — the Heading 1 title and the bullet list
 carry over. Reading the sheet uses the service account; no Google login or
 OAuth setup is needed.
+
+---
+
+### `onboard_new_larp.sh` — Stand up a fresh copy for a new game
+
+Unlike the Python scripts above, this is a one-time **onboarding** helper (bash
++ clasp, not Python). It creates a brand-new Google Sheet with its own bound
+Apps Script project and pushes this repo's code into it, so a new LARP can get
+started.
+
+```bash
+# Run from the root of a FRESH clone of this repo
+./utilities/onboard_new_larp.sh "Nightfall LARP — ST Automation"
+```
+
+Requires [`clasp`](https://github.com/google/clasp) (`npm install -g
+@google/clasp`). It refuses to run if a `.clasp.json` already exists, so it
+can't overwrite an existing project. See **section 7, "Onboarding a New LARP"**
+in the [top-level README](../README.md) for the full walkthrough and the
+post-create configuration steps.

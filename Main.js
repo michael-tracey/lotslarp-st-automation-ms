@@ -26,6 +26,7 @@ function onOpen() {
     [PROP_TEST_WEBHOOK]: 'YOUR_TEST_DISCORD_WEBHOOK_URL_HERE', // Replace if needed
     [PROP_IC_NEWS_FEED_WEBHOOK]: 'PROP_IC_NEWS_FEED_WEBHOOK',
     [PROP_LARP_NAME]: 'My Awesome LARP',
+    [PROP_NOTIFICATION_EMAIL]: 'avllotslarp@gmail.com', // Recipient for ST notification emails
     [PROP_TASK_COLOR_HEX]: '#FFFF00', // Default color for 'Any Narrator or Storyteller'
     [PROP_BOT_TOKEN]: 'YOUR_BOT_TOKEN_HERE',
     [PROP_GUILD_ID]: 'YOUR_GUILD_ID_HERE',
@@ -150,6 +151,10 @@ function onOpen() {
   const isTestMode = isDiscordTestMode_(); // In Utilities.gs
   const testModeLabel = `${isTestMode ? '✅ ' : ''}Toggle Discord Test Mode`;
   menu.addItem(testModeLabel, 'toggleDiscordTestMode_'); // Wrapper below
+
+  // --- One-time project setup (tucked at the very bottom; rarely needed) ---
+  menu.addSeparator();
+  menu.addItem('Initialise Project', 'initialiseProject_'); // In Setup.js
 
   // Finalize Menu
   menu.addToUi();
@@ -366,7 +371,7 @@ Stack: ${error.stack}`);
         } else if (_stWh && _stWh !== 'YOUR_STORYTELLER_DISCORD_WEBHOOK_URL_HERE') {
             sendDiscordWebhookMessage_(_stWh, _errMsg, 'Form Submit Error');
         }
-        GmailApp.sendEmail('avllotslarp@gmail.com', `Error Processing Downtime Submission - ${email}`, `An error occurred while processing the downtime submission from ${email}:\n\n${error}\n\n${error.stack}`);
+        GmailApp.sendEmail(getNotificationEmail_(), `Error Processing Downtime Submission - ${email}`, `An error occurred while processing the downtime submission from ${email}:\n\n${error}\n\n${error.stack}`);
     } catch (notifyError) {
         Logger.log(`Failed to send error notification: ${notifyError}`);
     }

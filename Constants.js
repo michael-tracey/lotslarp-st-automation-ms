@@ -66,11 +66,13 @@ const CHAR_SHEET_NAME_COL = 1;
 /** Column index (1-based) for the Discord Webhook in the "Characters" sheet. */
 const CHAR_SHEET_WEBHOOK_COL = 24; // Column X
 /** Column index (1-based) for the Approval Status in the "Characters" sheet. */
-const CHAR_SHEET_APPROVAL_COL = 8; // Column H
+const CHAR_SHEET_APPROVAL_COL = 10; // Column J ("Approved")
 /** Column index (1-based) for the Discord Channel ID (bot) in the "Characters" sheet. */
 const CHAR_SHEET_CHANNEL_ID_COL = 25; // Column Y
 /** Column index (1-based) for the Discord Channel Name in the "Characters" sheet. */
 const CHAR_SHEET_CHANNEL_NAME_COL = 26; // Column Z
+/** Column index (1-based) for the player's Email in the "Characters" sheet. */
+const CHAR_SHEET_EMAIL_COL = 27; // Column AA
 
 /** Name of the sheet containing character data. */
 const CHARACTER_SHEET_NAME = 'Characters';
@@ -104,6 +106,7 @@ const PROP_ANNOUNCEMENT_WEBHOOK = 'ANNOUNCEMENT_WEBHOOK'; // For #announcements 
 const PROP_IC_CHAT_WEBHOOK = 'IC_CHAT_WEBHOOK';           // For #ic-chat channel
 const PROP_IC_NEWS_FEED_WEBHOOK = 'IC_NEWS_FEED_WEBHOOK'; // For #ic-news-feed channel
 const PROP_LARP_NAME = 'LARP_NAME';
+const PROP_NOTIFICATION_EMAIL = 'NOTIFICATION_EMAIL'; // Recipient for ST notifications (new submissions, processing errors)
 const PROP_TASK_COLOR_HEX = 'TASK_COLOR_HEX'; // For 'Any Narrator or Storyteller' assignment
 /** Discord Bot script property keys */
 const PROP_BOT_TOKEN = 'BOT_TOKEN';             // Token for the lightweight downtime-delivery bot
@@ -134,7 +137,7 @@ const SCHEDULED_MSG_LOG_COL = 6;       // Column F: Send Log (Shifted)
 
 /** Characters Sheet Column Indices (1-based) */
 // const CHAR_SHEET_NAME_COL = 1; // Already defined above
-// const CHAR_SHEET_APPROVAL_COL = 8; // Already defined above
+// const CHAR_SHEET_APPROVAL_COL = 10; // Already defined above
 // const CHAR_SHEET_WEBHOOK_COL = 24; // Already defined above
 const NPC_SHEET_AVATAR_COL_SHEET_AVATAR_COL = 25; // *** NEW *** Column Y: Avatar URL
 
