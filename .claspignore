@@ -3,6 +3,14 @@
 # Local Python utilities — these run on your machine, not in Apps Script.
 utilities/**
 
+# Python virtualenv — ships stray .js files (e.g. urllib3's emscripten fetch
+# worker) that clasp would otherwise push into the Apps Script project, causing
+# "ReferenceError: TextEncoder is not defined" at load.
+.venv/**
+
+# Node deps, if ever present — never push these into Apps Script.
+node_modules/**
+
 # Never push secrets, even if one lands outside utilities/.
 **/.env
 **/service_account.json
